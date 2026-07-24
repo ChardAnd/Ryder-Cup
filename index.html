@@ -196,6 +196,30 @@ button{font-family:inherit;}
 }
 .picker-row button.active{background:var(--sage); color:#fff; border-color:var(--sage);}
 
+.match-tile-grid{display:flex; flex-direction:column; gap:10px;}
+.match-tile{
+  display:flex; align-items:center; gap:12px; padding:14px; border-radius:12px;
+  background:var(--panel); border:1px solid var(--line); cursor:pointer; text-align:left; width:100%;
+  font-family:inherit;
+}
+.match-tile:hover{border-color:var(--sage);}
+.match-tile .mt-num{
+  width:32px; height:32px; border-radius:50%; background:var(--gold); color:#fff; font-family:'IBM Plex Mono',monospace;
+  font-weight:700; font-size:13px; display:flex; align-items:center; justify-content:center; flex-shrink:0;
+}
+.match-tile .mt-names{flex:1; min-width:0;}
+.match-tile .mt-names div{font-size:13.5px; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+.match-tile .mt-names .a{color:var(--color-a);}
+.match-tile .mt-names .b{color:var(--color-b);}
+.match-tile .mt-status{
+  flex-shrink:0; font-family:'IBM Plex Mono',monospace; font-size:10.5px; font-weight:700; color:var(--ink-dim);
+  padding:5px 9px; border-radius:14px; background:#fff; border:1px solid var(--line-strong);
+}
+.back-to-matches{
+  display:inline-flex; align-items:center; gap:6px; background:none; border:none; color:var(--sage-dark);
+  font-weight:700; font-size:13px; cursor:pointer; padding:8px 0 14px; font-family:inherit;
+}
+
 .edit-card{
   background:var(--panel); border:1px solid var(--line); border-radius:14px;
   padding:16px; margin-bottom:14px;
@@ -454,6 +478,7 @@ const COLOR_SWATCHES = ['#2A4270','#9A3A2C','#1F6E5C','#6B4C9A','#C24C39','#3C5A
 let state = null;
 let currentView = 'board';
 let updateSessionId = null;
+let selectedMatchId = null; // which single match the Update tab is currently focused on
 let stepperIdx = {}; // matchId -> current hole index shown in the on-course stepper (UI-only, not saved)
 
 function getStepperIdx(m){
@@ -753,6 +778,35 @@ function renderUpdate(){
   const isSingles = session.type==='singles';
   const course = state.course;
 
+  // Validate the selected match still belongs to this session; if not (or nothing
+  // selected yet), show a picker so a phone can only ever edit one match at a time.
+  if(selectedMatchId && !session.matches.find(m=>m.id===selectedMatchId)) selectedMatchId = null;
+
+  if(!selectedMatchId){
+    html += `<div class="match-tile-grid">`;
+    session.matches.forEach((m, idx)=>{
+      html += `<button class="match-tile" data-select="${m.id}" type="button">
+        <div class="mt-num">${idx+1}</div>
+        <div class="mt-names">
+          <div class="a">${escapeHtml(displayNames(m.playersA, idx))}</div>
+          <div class="b">${escapeHtml(displayNames(m.playersB, idx))}</div>
+        </div>
+        <div class="mt-status">${matchStatusText(m)}</div>
+      </button>`;
+    });
+    html += `</div>`;
+    el.innerHTML = html;
+    el.querySelectorAll('.picker-row button').forEach(btn=>{
+      btn.onclick = ()=>{ updateSessionId = btn.dataset.sid; selectedMatchId = null; renderUpdate(); };
+    });
+    el.querySelectorAll('[data-select]').forEach(btn=>{
+      btn.onclick = ()=>{ selectedMatchId = btn.dataset.select; renderUpdate(); };
+    });
+    return;
+  }
+
+  html += `<button class="back-to-matches" data-action="backtomatches" type="button">← Back to matches</button>`;
+
   function holeGridHtml(m, isFront){
     const start = isFront ? 0 : 9;
     const cols = Array.from({length:9},(_,i)=>start+i);
@@ -804,6 +858,7 @@ function renderUpdate(){
   }
 
   session.matches.forEach((m, idx)=>{
+    if(m.id !== selectedMatchId) return;
     const hasHoleData = m.holeScoresA.some(x=>x!=='' && x!=null) || m.holeScoresB.some(x=>x!=='' && x!=null);
     if(hasHoleData) computeFromHoles(m, course);
     html += `<div class="edit-card" data-mid="${m.id}">
@@ -876,8 +931,11 @@ function renderUpdate(){
   el.innerHTML = html;
 
   el.querySelectorAll('.picker-row button').forEach(btn=>{
-    btn.onclick = ()=>{ updateSessionId = btn.dataset.sid; renderUpdate(); };
+    btn.onclick = ()=>{ updateSessionId = btn.dataset.sid; selectedMatchId = null; renderUpdate(); };
   });
+
+  const backBtn = el.querySelector('[data-action=backtomatches]');
+  if(backBtn) backBtn.onclick = ()=>{ selectedMatchId = null; renderUpdate(); };
 
   el.querySelectorAll('.edit-card').forEach(card=>{
     const mid = card.dataset.mid;
