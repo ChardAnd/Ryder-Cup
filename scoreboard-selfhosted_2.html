@@ -1,0 +1,1290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Cup Live</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700;9..144,900&family=IBM+Plex+Mono:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap');
+
+:root{
+  --bg:#FFFFFF;
+  --panel:#F3F6F0;
+  --line: rgba(20,35,15,0.10);
+  --line-strong: rgba(20,35,15,0.22);
+  --sage:#7C9A6E;
+  --sage-dark:#5F7A54;
+  --ink:#1B2419;
+  --ink-dim:#6A7A63;
+  --color-a:#2A4270;
+  --color-b:#9A3A2C;
+  --gold:#C08A2E;
+  --neutral:#8B9686;
+  --ok:#5C8A6B;
+  font-family: 'IBM Plex Sans', sans-serif;
+}
+*{box-sizing:border-box; -webkit-tap-highlight-color: transparent;}
+html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);min-height:100%;}
+body{
+  background:var(--bg);
+}
+h1,h2,h3,.display{font-family:'Fraunces', serif;}
+.mono{font-family:'IBM Plex Mono', monospace;}
+button{font-family:inherit;}
+
+/* ---------- App shell ---------- */
+#app{max-width:960px;margin:0 auto;padding:0 0 60px;min-height:100vh;}
+
+.topbar{
+  display:flex; align-items:center; justify-content:space-between; gap:10px;
+  padding:14px 18px; position:sticky; top:0; z-index:20;
+  background:var(--sage);
+}
+.brand{display:flex; align-items:center; gap:10px; min-width:0;}
+.brand .dot{width:9px;height:9px;border-radius:50%;background:#fff; flex-shrink:0;}
+.brand .dot.live{background:#E15C4E; animation:pulse 1.8s ease-in-out infinite;}
+@keyframes pulse{0%,100%{opacity:1; box-shadow:0 0 0 0 rgba(225,92,78,0.5);} 50%{opacity:.6; box-shadow:0 0 0 6px rgba(225,92,78,0);}}
+.brand-title{
+  font-size:15px; letter-spacing:.12em; text-transform:uppercase; color:#fff; font-weight:600;
+  outline:none; border-bottom:1px dashed transparent; padding:2px 0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  min-width:60px; max-width:44vw;
+}
+.brand-title:hover, .brand-title:focus{border-bottom-color:rgba(255,255,255,0.6);}
+.nav{display:flex; gap:4px; background:rgba(0,0,0,0.14); padding:4px; border-radius:10px; overflow-x:auto;}
+.nav button{
+  background:transparent;border:none;color:rgba(255,255,255,0.8);
+  padding:8px 12px;border-radius:7px;font-size:12px;font-weight:600;
+  letter-spacing:.04em; text-transform:uppercase; cursor:pointer; transition:all .15s; white-space:nowrap;
+}
+.nav button.active{background:#fff; color:var(--sage-dark);}
+
+.view{padding:20px 18px 0;}
+.hidden{display:none !important;}
+
+/* ---------- Board: header score ---------- */
+.matchup{
+  display:flex; align-items:stretch; justify-content:space-between; gap:16px;
+  margin-bottom:22px;
+}
+.team-block{flex:1; text-align:center;}
+.team-block .tname{
+  font-size:clamp(22px,5vw,34px); font-weight:700; letter-spacing:.02em;
+}
+.team-block.a .tname{color:var(--color-a);}
+.team-block.b .tname{color:var(--color-b);}
+.team-block .tpoints{
+  font-family:'IBM Plex Mono', monospace; font-size:clamp(48px,14vw,84px);
+  font-weight:700; line-height:1; margin-top:2px;
+}
+.vs-mid{
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  color:var(--ink-dim); min-width:70px;
+}
+.vs-mid .label{font-size:10px; letter-spacing:.15em; text-transform:uppercase;}
+.vs-mid .need{font-family:'IBM Plex Mono',monospace; font-size:13px; margin-top:6px; color:var(--gold); text-align:center;}
+
+.clinched-banner{
+  text-align:center; padding:10px 16px; margin-bottom:18px; border-radius:10px;
+  font-family:'Fraunces',serif; font-weight:700; font-size:16px;
+  background:linear-gradient(90deg, rgba(192,138,46,0.10), rgba(192,138,46,0.20), rgba(192,138,46,0.10));
+  border:1px solid var(--gold); color:var(--gold);
+}
+
+/* ---------- Tally bar (grouped points bar under the score header) ---------- */
+.tally-wrap{margin-bottom:28px;}
+.tally-meta{
+  text-align:center; font-size:12px; color:var(--ink-dim); text-transform:uppercase;
+  letter-spacing:.06em; margin-bottom:8px; font-weight:600;
+}
+.tally-bar{
+  position:relative; height:56px; border-radius:28px; overflow:hidden;
+  box-shadow:0 2px 8px rgba(20,35,15,0.15);
+}
+.tally-segments{display:flex; width:100%; height:100%;}
+.tseg{flex:1; height:100%; border-right:1px solid rgba(255,255,255,0.28);}
+.tseg:last-child{border-right:none;}
+.tseg.a{background:var(--color-a);}
+.tseg.b{background:var(--color-b);}
+.tseg.half{background:var(--gold);}
+.tseg.pending{background:var(--panel);}
+.tseg.live-a{background:var(--color-a); opacity:.55; animation:pulse 1.6s ease-in-out infinite;}
+.tseg.live-b{background:var(--color-b); opacity:.55; animation:pulse 1.6s ease-in-out infinite;}
+.tseg.live-as{background:var(--neutral); opacity:.55; animation:pulse 1.6s ease-in-out infinite;}
+.tally-divider{position:absolute; top:0; bottom:0; width:2px; background:rgba(0,0,0,0.35); z-index:3;}
+.tally-num{
+  position:absolute; top:50%; transform:translateY(-50%); z-index:4;
+  font-family:'IBM Plex Mono',monospace; font-weight:800; font-size:clamp(20px,5vw,28px);
+  color:#fff; text-shadow:0 1px 4px rgba(0,0,0,0.35);
+}
+.tally-num.left{left:16px;}
+.tally-num.right{right:16px;}
+.trail-wrap{margin-bottom:26px;}
+.trail-grid{display:grid; grid-template-columns:1fr 1fr; gap:2px 28px;}
+@media (max-width:700px){ .trail-grid{grid-template-columns:1fr;} }
+.trail-row{display:flex; align-items:center; gap:10px; padding:6px 0;}
+.trail-session-label{
+  width:108px; flex-shrink:0; font-size:11px; line-height:1.25; color:var(--ink-dim);
+  text-transform:uppercase; letter-spacing:.05em;
+}
+.trail-session-label b{display:block; color:var(--ink); font-size:12px; letter-spacing:.03em;}
+.trail-blocks{display:flex; gap:5px; flex-wrap:wrap;}
+.blk{
+  width:17px;height:17px;border-radius:4px;
+  border:1.4px solid var(--line-strong);
+  position:relative; flex-shrink:0;
+}
+.blk.pending{background:transparent;}
+.blk.live-a{border-color:var(--color-a); background:rgba(42,66,112,0.14);}
+.blk.live-a::after{
+  content:''; position:absolute; inset:3px; border-radius:2px; background:var(--color-a);
+  animation:pulse 1.6s ease-in-out infinite;
+}
+.blk.live-b{border-color:var(--color-b); background:rgba(154,58,44,0.14);}
+.blk.live-b::after{
+  content:''; position:absolute; inset:3px; border-radius:2px; background:var(--color-b);
+  animation:pulse 1.6s ease-in-out infinite;
+}
+.blk.live-as{border-color:var(--neutral); background:rgba(139,150,134,0.18);}
+.blk.live-as::after{
+  content:''; position:absolute; inset:3px; border-radius:2px; background:var(--neutral);
+  animation:pulse 1.6s ease-in-out infinite;
+}
+.blk.a{background:var(--color-a); border-color:var(--color-a);}
+.blk.b{background:var(--color-b); border-color:var(--color-b);}
+.blk.half{background:var(--gold); border-color:var(--gold);}
+
+/* ---------- Match list (board detail + update view) ---------- */
+.sessions-grid{display:grid; grid-template-columns:1fr 1fr; gap:0 28px;}
+@media (max-width:700px){ .sessions-grid{grid-template-columns:1fr;} }
+.session-group{margin-bottom:22px;}
+.session-head{
+  display:flex; align-items:baseline; justify-content:space-between; gap:10px;
+  padding-bottom:8px; margin-bottom:10px; border-bottom:1px solid var(--line);
+}
+.session-head h3{margin:0; font-size:19px; font-weight:700; color:var(--ink);}
+.session-head span{font-size:12px; color:var(--ink-dim); text-transform:uppercase; letter-spacing:.06em;}
+.match-row{
+  display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:10px;
+  background:var(--panel); border:1px solid var(--line); margin-bottom:8px;
+}
+.match-row .idx{
+  flex-shrink:0; width:22px; height:22px; border-radius:50%; background:rgba(192,138,46,0.14);
+  color:var(--gold); font-family:'IBM Plex Mono',monospace; font-size:11px; font-weight:700;
+  display:flex; align-items:center; justify-content:center;
+}
+.match-row .side{flex:1; font-size:14px; font-weight:500; line-height:1.3;}
+.match-row .side.a{text-align:right; color:var(--color-a);}
+.match-row .side.b{text-align:left; color:var(--color-b);}
+.match-row .status-pill{
+  flex-shrink:0; min-width:104px; text-align:center; padding:6px 10px; border-radius:20px;
+  font-family:'IBM Plex Mono',monospace; font-size:12px; font-weight:600;
+  background:#fff; color:var(--ink-dim); border:1px solid var(--line-strong);
+}
+.match-row .status-pill.decided{color:var(--ink); border:none;}
+.match-row .status-pill.decided.a{background:var(--color-a); color:#fff;}
+.match-row .status-pill.decided.b{background:var(--color-b); color:#fff;}
+.match-row .status-pill.decided.half{background:var(--gold); color:#fff;}
+.match-row .status-pill.live-a{color:var(--color-a); border-color:var(--color-a); background:rgba(42,66,112,0.08);}
+.match-row .status-pill.live-b{color:var(--color-b); border-color:var(--color-b); background:rgba(154,58,44,0.08);}
+.match-row .status-pill.live-as{color:var(--neutral); border-color:var(--neutral); background:rgba(139,150,134,0.12);}
+
+/* ---------- Update view ---------- */
+.picker-row{display:flex; gap:8px; overflow-x:auto; padding-bottom:6px; margin-bottom:16px;}
+.picker-row button{
+  flex-shrink:0; background:var(--panel); border:1px solid var(--line-strong); color:var(--ink-dim);
+  padding:10px 14px; border-radius:9px; font-size:13px; font-weight:600; cursor:pointer;
+}
+.picker-row button.active{background:var(--sage); color:#fff; border-color:var(--sage);}
+
+.edit-card{
+  background:var(--panel); border:1px solid var(--line); border-radius:14px;
+  padding:16px; margin-bottom:14px;
+}
+.match-num{
+  display:inline-flex; align-items:center; gap:7px; font-family:'IBM Plex Mono',monospace;
+  font-size:12px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--gold);
+  margin-bottom:12px;
+}
+.match-num .n{
+  width:20px;height:20px;border-radius:50%; background:var(--gold); color:#fff;
+  display:flex; align-items:center; justify-content:center; font-size:11px;
+}
+.names{display:flex; gap:14px; margin-bottom:12px;}
+.names-col{flex:1; display:flex; flex-direction:column; gap:7px;}
+.names-col .col-label{font-size:10px; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-dim);}
+.edit-card input[type=text]{
+  width:100%; background:#fff; border:1px solid var(--line-strong); border-radius:8px;
+  color:var(--ink); padding:9px 10px; font-size:14px; font-family:inherit;
+}
+.names-col.a input[type=text]{border-left:3px solid var(--color-a);}
+.names-col.b input[type=text]{border-left:3px solid var(--color-b);}
+.seg{display:flex; gap:6px; margin-bottom:12px;}
+.seg button{
+  flex:1; background:#fff; border:1px solid var(--line-strong); color:var(--ink-dim);
+  padding:9px 6px; border-radius:8px; font-size:12.5px; font-weight:600; cursor:pointer;
+}
+.seg button.active{background:var(--gold); color:#fff; border-color:var(--gold);}
+.subcontrols{display:none; gap:8px; margin-bottom:12px; flex-wrap:wrap;}
+.subcontrols.show{display:flex;}
+.subcontrols .grp{flex:1; min-width:110px;}
+.subcontrols label{display:block; font-size:10.5px; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-dim); margin-bottom:4px;}
+.subcontrols select, .subcontrols input{
+  width:100%; background:#fff; border:1px solid var(--line-strong); border-radius:7px;
+  color:var(--ink); padding:8px; font-size:13px; font-family:inherit;
+}
+.save-btn{
+  width:100%; padding:11px; border-radius:9px; border:none; background:var(--sage); color:#fff;
+  font-weight:700; font-size:13.5px; letter-spacing:.02em; cursor:pointer;
+}
+.save-btn.saved{background:var(--ok); color:#fff;}
+
+.mode-toggle{display:flex; gap:6px; margin-bottom:14px;}
+.mode-toggle button{
+  flex:1; background:#fff; border:1px solid var(--line-strong); color:var(--ink-dim);
+  padding:8px 6px; border-radius:8px; font-size:12px; font-weight:600; cursor:pointer;
+}
+.mode-toggle button.active{background:var(--sage); color:#fff; border-color:var(--sage);}
+
+.entry-columns{display:flex; gap:18px; align-items:flex-start;}
+.entry-columns .quick-col{flex:1; min-width:190px;}
+.entry-columns .holes-col{flex:1.7; min-width:280px; border-left:1px solid var(--line); padding-left:18px;}
+@media (max-width:760px){
+  .entry-columns{flex-direction:column;}
+  .entry-columns .holes-col{border-left:none; padding-left:0; border-top:1px solid var(--line); padding-top:16px; margin-top:4px; order:-1;}
+  .entry-columns .quick-col{border-top:1px solid var(--line); padding-top:16px; margin-top:4px;}
+}
+
+.hole-stepper{background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:16px; margin-bottom:10px;}
+.hs-nav{display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;}
+.hs-nav button{
+  background:#fff; border:1px solid var(--line-strong); color:var(--ink); width:38px; height:38px;
+  border-radius:10px; font-size:18px; cursor:pointer; flex-shrink:0;
+}
+.hs-nav button:disabled{opacity:.3; cursor:default;}
+.hs-hole-info{text-align:center;}
+.hs-hole-info .num{font-family:'Fraunces',serif; font-weight:800; font-size:26px; color:var(--ink); line-height:1;}
+.hs-hole-info .meta{font-size:11px; color:var(--ink-dim); text-transform:uppercase; letter-spacing:.06em; margin-top:3px;}
+.hs-score-row{display:flex; align-items:center; justify-content:space-between; padding:12px 2px; border-top:1px solid var(--line-strong);}
+.hs-team-name{font-weight:700; font-size:14.5px; flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+.hs-team-name.a{color:var(--color-a);}
+.hs-team-name.b{color:var(--color-b);}
+.hs-stepper{display:flex; align-items:center; gap:12px; flex-shrink:0;}
+.hs-stepper button{
+  width:42px; height:42px; border-radius:50%; border:1.5px solid var(--line-strong); background:#fff;
+  font-size:20px; font-weight:700; color:var(--ink); cursor:pointer;
+}
+.hs-stepper .val{font-family:'IBM Plex Mono',monospace; font-weight:800; font-size:22px; min-width:26px; text-align:center; color:var(--ink);}
+.hs-save-btn{
+  width:100%; margin-top:14px; padding:14px; border-radius:10px; border:none; background:var(--sage);
+  color:#fff; font-weight:700; font-size:14.5px; cursor:pointer;
+}
+.hs-toggle-full{
+  display:block; width:100%; text-align:center; font-size:12px; color:var(--ink-dim);
+  text-decoration:underline; margin:4px 0 10px; cursor:pointer; background:none; border:none; padding:6px;
+}
+.full-grid-wrap{display:none;}
+.full-grid-wrap.show{display:block;}
+.qr-heading{font-size:11px; text-transform:uppercase; letter-spacing:.07em; font-weight:700; color:var(--ink-dim); margin-bottom:8px;}
+.qr-result-buttons{display:flex; flex-direction:column; gap:8px; margin-bottom:10px;}
+.win-btn{
+  width:100%; padding:12px 10px; border-radius:9px; font-weight:700; font-size:13.5px;
+  cursor:pointer; text-align:center; background:#fff; transition:all .12s;
+}
+.win-btn.a{color:var(--color-a); border:1.5px solid var(--color-a);}
+.win-btn.b{color:var(--color-b); border:1.5px solid var(--color-b);}
+.win-btn.half{color:var(--gold); border:1.5px solid var(--gold);}
+.win-btn.a.active{background:var(--color-a); color:#fff;}
+.win-btn.b.active{background:var(--color-b); color:#fff;}
+.win-btn.half.active{background:var(--gold); color:#fff;}
+.margin-grp{display:none;}
+.margin-grp.show{display:block;}
+.margin-grp label{display:block; font-size:10.5px; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-dim); margin-bottom:4px;}
+.margin-grp input{
+  width:100%; background:#fff; border:1px solid var(--line-strong); border-radius:7px;
+  color:var(--ink); padding:8px; font-size:13px; font-family:inherit;
+}
+.card-actions{display:flex; gap:8px; margin-top:16px;}
+.card-actions .save-btn{flex:2;}
+.reset-btn{
+  flex:1; padding:11px; border-radius:9px; border:1px solid rgba(154,58,44,0.4); background:#fff;
+  color:#9A3A2C; font-weight:700; font-size:12.5px; cursor:pointer;
+}
+.holes-status{
+  text-align:center; padding:9px; border-radius:8px; margin-bottom:12px; font-family:'IBM Plex Mono',monospace;
+  font-weight:700; font-size:13px; background:var(--panel); border:1px solid var(--line-strong); color:var(--ink);
+}
+.strokes-row{display:flex; gap:10px; margin-bottom:14px;}
+.strokes-row .grp{flex:1;}
+.strokes-row label{display:block; font-size:10px; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-dim); margin-bottom:4px;}
+.strokes-row input{
+  width:100%; background:#fff; border:1px solid var(--line-strong); border-radius:7px;
+  color:var(--ink); padding:8px; font-size:13px; text-align:center; font-family:'IBM Plex Mono',monospace;
+}
+.hole-nine-label{font-size:11px; font-weight:700; color:var(--ink-dim); text-transform:uppercase; letter-spacing:.06em; margin:4px 0 6px;}
+.hole-grid-wrap{overflow-x:auto; margin-bottom:6px; -webkit-overflow-scrolling:touch;}
+.hole-grid{border-collapse:collapse; width:100%;}
+.hole-grid th, .hole-grid td{padding:2px; text-align:center;}
+.hole-grid thead th{
+  font-family:'IBM Plex Mono',monospace; font-size:10px; font-weight:600; color:var(--ink-dim);
+}
+.hole-grid .rowlabel{
+  font-family:'IBM Plex Sans',sans-serif; font-weight:700; font-size:10.5px; text-align:left;
+  padding-right:6px; white-space:nowrap; color:var(--ink);
+}
+.hole-grid input{
+  width:28px; padding:5px 2px; text-align:center; border:1px solid var(--line-strong); border-radius:5px;
+  background:#fff; color:var(--ink); font-family:'IBM Plex Mono',monospace; font-size:12px;
+}
+.hole-grid tr.row-a input{border-bottom:2px solid var(--color-a);}
+.hole-grid tr.row-b input{border-bottom:2px solid var(--color-b);}
+
+/* ---------- Setup view ---------- */
+.setup-card{background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:16px; margin-bottom:14px;}
+.setup-card h3{margin:0 0 12px; font-size:16px; color:var(--ink);}
+.setup-row{display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:10px;}
+.setup-row label{font-size:13.5px; color:var(--ink-dim); flex:1;}
+.setup-row input[type=number]{
+  width:70px; background:#fff; border:1px solid var(--line-strong); border-radius:7px;
+  color:var(--ink); padding:8px; font-size:14px; text-align:center; font-family:'IBM Plex Mono',monospace;
+}
+.teamname-row{display:flex; gap:10px; margin-bottom:16px;}
+.teamname-row input[type=text]{
+  flex:1; background:#fff; border:1px solid var(--line-strong); border-radius:8px;
+  color:var(--ink); padding:10px; font-size:15px; font-weight:600; font-family:inherit;
+}
+.teamname-row input.a{border-left:4px solid var(--color-a);}
+.teamname-row input.b{border-left:4px solid var(--color-b);}
+.color-block{display:flex; gap:16px;}
+.color-col{flex:1;}
+.color-col .cc-label{font-size:12px; font-weight:700; margin-bottom:8px; display:flex; align-items:center; gap:6px;}
+.color-col.a .cc-label{color:var(--color-a);}
+.color-col.b .cc-label{color:var(--color-b);}
+.swatches{display:flex; flex-wrap:wrap; gap:8px; margin-bottom:8px;}
+.swatch{
+  width:28px; height:28px; border-radius:50%; border:2px solid transparent; cursor:pointer;
+  display:flex; align-items:center; justify-content:center; color:#fff; font-size:13px;
+  box-shadow:0 0 0 1px var(--line-strong);
+}
+.swatch.selected{border-color:var(--ink); box-shadow:0 0 0 1px var(--ink);}
+.custom-color-row{display:flex; align-items:center; gap:8px;}
+.custom-color-row input[type=color]{
+  width:38px; height:32px; border:none; border-radius:6px; background:transparent; cursor:pointer; padding:0;
+}
+.custom-color-row span{font-size:11.5px; color:var(--ink-dim);}
+.apply-btn{
+  width:100%; padding:13px; border-radius:9px; border:none; background:var(--sage); color:#fff;
+  font-weight:700; font-size:14px; cursor:pointer; margin-top:6px;
+}
+.note{font-size:12px; color:var(--ink-dim); line-height:1.5; margin-top:4px;}
+.footer-note{text-align:center; color:var(--ink-dim); font-size:11px; padding:20px 18px 0; letter-spacing:.03em;}
+
+/* ---------- MVP view ---------- */
+.mvp-empty{text-align:center; padding:40px 20px; color:var(--ink-dim); font-size:14px; line-height:1.6;}
+.mvp-row{
+  display:flex; align-items:center; gap:12px; padding:12px 14px; border-radius:12px;
+  background:var(--panel); border:1px solid var(--line); margin-bottom:8px;
+}
+.mvp-row.top{background:linear-gradient(90deg, rgba(192,138,46,0.16), rgba(192,138,46,0.05)); border:1px solid var(--gold);}
+.mvp-rank{
+  width:28px;height:28px;border-radius:50%; flex-shrink:0; display:flex; align-items:center; justify-content:center;
+  font-family:'IBM Plex Mono',monospace; font-weight:700; font-size:13px; background:#fff; color:var(--ink-dim); border:1px solid var(--line-strong);
+}
+.mvp-row.top .mvp-rank{background:var(--gold); color:#fff; border:none;}
+.mvp-name-wrap{flex:1; min-width:0;}
+.mvp-name{font-weight:700; font-size:15px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color:var(--ink);}
+.mvp-team{font-size:11px; text-transform:uppercase; letter-spacing:.05em; margin-top:2px;}
+.mvp-stats{text-align:right; flex-shrink:0;}
+.mvp-wins{font-family:'IBM Plex Mono',monospace; font-weight:700; font-size:18px; color:var(--ink);}
+.mvp-margin{font-size:11px; color:var(--ink-dim);}
+.mvp-crown{font-size:16px; margin-right:2px;}
+</style>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-database-compat.js"></script>
+</head>
+<body>
+<div id="app">
+  <div class="topbar">
+    <div class="brand">
+      <div class="dot live" id="liveDot"></div>
+      <div class="brand-title" id="brandTitle" contenteditable="true" spellcheck="false">Cup Live</div>
+    </div>
+    <div class="nav">
+      <button data-view="board" class="active">Board</button>
+      <button data-view="update">Update</button>
+      <button data-view="mvp">MVP</button>
+      <button data-view="setup">Setup</button>
+    </div>
+  </div>
+
+  <div class="view" id="view-board"></div>
+  <div class="view hidden" id="view-update"></div>
+  <div class="view hidden" id="view-mvp"></div>
+  <div class="view hidden" id="view-setup"></div>
+
+  <div class="footer-note">Scores sync across devices every few seconds &middot; last update <span id="lastSync">—</span></div>
+</div>
+
+<script>
+// ====================================================================
+// PASTE YOUR FIREBASE CONFIG HERE — see the setup guide for how to get this.
+// (Firebase console → Project settings → General → Your apps → the </> web icon)
+// ====================================================================
+const firebaseConfig = {
+  apiKey: "AIzaSyB-ePG8798a3e99YibOFqqn2zEMT31xA20",
+  authDomain: "ryder-cup-cd3c8.firebaseapp.com",
+  databaseURL: "https://ryder-cup-cd3c8-default-rtdb.firebaseio.com",
+  projectId: "ryder-cup-cd3c8",
+  storageBucket: "ryder-cup-cd3c8.firebasestorage.app",
+  messagingSenderId: "425549902302",
+  appId: "1:425549902302:web:b19e032ded894995b86d4f"
+};
+firebase.initializeApp(firebaseConfig);
+const dbRef = firebase.database().ref('ryder-event-v1');
+// ====================================================================
+
+const STORE_KEY = 'ryder-event-v1';
+const SESSION_TEMPLATE = [
+  {id:'satam', label:'Saturday Morning', sub:'Fourball', type:'fourball', count:4},
+  {id:'satpm', label:'Saturday Afternoon', sub:'Foursomes', type:'foursomes', count:4},
+  {id:'sunam', label:'Sunday Morning', sub:'Fourball', type:'fourball', count:4},
+  {id:'sunpm', label:'Sunday Afternoon', sub:'Singles', type:'singles', count:12},
+];
+const COLOR_SWATCHES = ['#2A4270','#9A3A2C','#1F6E5C','#6B4C9A','#C24C39','#3C5A96','#B08D2B','#3D3D3D'];
+
+let state = null;
+let currentView = 'board';
+let updateSessionId = null;
+let stepperIdx = {}; // matchId -> current hole index shown in the on-course stepper (UI-only, not saved)
+
+function getStepperIdx(m){
+  if(stepperIdx[m.id] !== undefined) return stepperIdx[m.id];
+  let idx = 17;
+  for(let i=0;i<18;i++){
+    if(m.holeScoresA[i]==='' || m.holeScoresA[i]==null || m.holeScoresB[i]==='' || m.holeScoresB[i]==null){ idx = i; break; }
+  }
+  stepperIdx[m.id] = idx;
+  return idx;
+}
+
+function playerCount(type){ return type==='singles' ? 1 : 2; }
+
+function shapeMatch(m, type){
+  const pCount = playerCount(type);
+  if(!Array.isArray(m.playersA)) m.playersA = m.labelA ? [m.labelA] : [];
+  if(!Array.isArray(m.playersB)) m.playersB = m.labelB ? [m.labelB] : [];
+  while(m.playersA.length < pCount) m.playersA.push('');
+  while(m.playersB.length < pCount) m.playersB.push('');
+  m.playersA = m.playersA.slice(0, pCount);
+  m.playersB = m.playersB.slice(0, pCount);
+  delete m.labelA; delete m.labelB;
+  if(typeof m.status !== 'string') m.status = 'pending';
+  if(!Array.isArray(m.holeScoresA)) m.holeScoresA = new Array(18).fill('');
+  if(!Array.isArray(m.holeScoresB)) m.holeScoresB = new Array(18).fill('');
+  while(m.holeScoresA.length < 18) m.holeScoresA.push('');
+  while(m.holeScoresB.length < 18) m.holeScoresB.push('');
+  if(typeof m.strokesA !== 'number') m.strokesA = 0;
+  if(typeof m.strokesB !== 'number') m.strokesB = 0;
+  delete m.inputMode;
+  return m;
+}
+
+function buildMatches(sessionId, count, existing, type){
+  const out = [];
+  for(let i=0;i<count;i++){
+    if(existing[i]){ out.push(shapeMatch(existing[i], type)); continue; }
+    out.push(shapeMatch({
+      id: sessionId+'-'+i,
+      status:'pending', // pending | live | final
+      leader:null, up:1, thru:1,      // live state
+      winner:null, margin:'', halved:false // final state
+    }, type));
+  }
+  return out;
+}
+
+function defaultCourse(){
+  const holes = [];
+  for(let i=1;i<=18;i++){ holes.push({hole:i, par:4, si:i}); }
+  return { holes };
+}
+
+function defaultState(){
+  const sessions = SESSION_TEMPLATE.map(t => ({
+    id:t.id, label:t.label, sub:t.sub, type:t.type, count:t.count,
+    matches: buildMatches(t.id, t.count, [], t.type)
+  }));
+  return { title:'Cup Live', teamA:'USA', teamB:'Europe', colorA:COLOR_SWATCHES[0], colorB:COLOR_SWATCHES[1], course:defaultCourse(), sessions };
+}
+
+function applyColors(){
+  document.documentElement.style.setProperty('--color-a', state.colorA);
+  document.documentElement.style.setProperty('--color-b', state.colorB);
+}
+
+async function loadState(){
+  try{
+    const snap = await dbRef.once('value');
+    const val = snap.val();
+    if(val){ state = val; }
+    else { state = defaultState(); }
+  }catch(e){
+    console.error('load failed', e);
+    state = state || defaultState();
+  }
+  // heal in case of older data / removed fields
+  if(!state.sessions) state.sessions = defaultState().sessions;
+  if(!state.title) state.title = 'Cup Live';
+  if(!state.colorA) state.colorA = COLOR_SWATCHES[0];
+  if(!state.colorB) state.colorB = COLOR_SWATCHES[1];
+  if(!state.course || !Array.isArray(state.course.holes) || state.course.holes.length!==18) state.course = defaultCourse();
+  state.sessions.forEach(s=>{ s.matches = s.matches.map(m=>shapeMatch(m, s.type)); });
+  applyColors();
+}
+
+async function saveState(){
+  try{
+    await dbRef.set(state);
+    document.getElementById('lastSync').textContent = new Date().toLocaleTimeString();
+  }catch(e){
+    console.error('save failed', e);
+  }
+}
+
+function computeTotals(){
+  let a=0,b=0,decided=0,total=0;
+  state.sessions.forEach(s=>{
+    s.matches.forEach(m=>{
+      total += 1;
+      if(m.status==='final'){
+        decided += 1;
+        if(m.halved){ a+=0.5; b+=0.5; }
+        else if(m.winner==='A'){ a+=1; }
+        else if(m.winner==='B'){ b+=1; }
+      }
+    });
+  });
+  const threshold = Math.floor(total/2)+0.5;
+  return {a,b,decided,total,threshold};
+}
+
+function fmtPts(n){
+  return Number.isInteger(n) ? n.toString() : n.toFixed(1);
+}
+
+// Given gross scores per hole and strokes given, work out who's winning and by how much,
+// using the course's stroke index to decide which holes carry a handicap stroke.
+function computeFromHoles(m, course){
+  const holes = (course && course.holes && course.holes.length===18) ? course.holes : defaultCourse().holes;
+  let up = 0, holesPlayed = 0, decidedAtHole = null;
+  for(let i=0;i<18;i++){
+    const rawA = m.holeScoresA[i], rawB = m.holeScoresB[i];
+    if(rawA===''||rawA==null||rawB===''||rawB==null) break;
+    const gA = Number(rawA), gB = Number(rawB);
+    if(isNaN(gA) || isNaN(gB)) break;
+    holesPlayed = i+1;
+    const si = holes[i].si;
+    const strokeA = (m.strokesA||0) >= si ? 1 : 0;
+    const strokeB = (m.strokesB||0) >= si ? 1 : 0;
+    const netA = gA - strokeA, netB = gB - strokeB;
+    if(netA < netB) up += 1; else if(netB < netA) up -= 1;
+    const remaining = 18 - (i+1);
+    if(Math.abs(up) > remaining){ decidedAtHole = i+1; break; }
+  }
+  if(holesPlayed===0){
+    m.status='pending'; m.leader=null; m.up=1; m.thru=1; m.winner=null; m.margin=''; m.halved=false;
+    return;
+  }
+  const finished = decidedAtHole!==null || holesPlayed===18;
+  if(finished){
+    m.status='final';
+    if(up===0){
+      m.halved=true; m.winner=null; m.margin='';
+    } else {
+      m.halved=false;
+      m.winner = up>0 ? 'A' : 'B';
+      const marginHoles = Math.abs(up);
+      const finishedAt = decidedAtHole || 18;
+      const remaining = 18 - finishedAt;
+      m.margin = remaining>0 ? (marginHoles+'&'+remaining) : (marginHoles+' UP');
+    }
+  } else {
+    m.status='live';
+    m.leader = up>0 ? 'A' : (up<0 ? 'B' : 'AS');
+    m.up = Math.abs(up) || 1;
+    m.thru = holesPlayed;
+  }
+}
+
+function matchStatusText(m){
+  if(m.status==='final'){
+    if(m.halved) return 'HALVED';
+    return (m.margin ? m.margin.toUpperCase() : 'WIN');
+  }
+  if(m.status==='live'){
+    if(m.leader==='AS') return 'AS THRU '+m.thru;
+    return (m.up||1)+' UP THRU '+m.thru;
+  }
+  return 'NOT STARTED';
+}
+
+function displayNames(players, idx){
+  const joined = players.filter(p=>p && p.trim()).join(' & ');
+  return joined || 'Match '+(idx+1);
+}
+
+/* ---------------- BOARD VIEW ---------------- */
+// Builds the single grouped points bar under the header: every match across the whole
+// event, sorted into won-by-A / halved / still-to-play / won-by-B, with the running
+// totals overlaid at each end (mirrors the classic on-course Ryder Cup tally graphic).
+function renderTallyBar(t){
+  const allMatches = [];
+  state.sessions.forEach(s=> s.matches.forEach(m=> allMatches.push(m)));
+
+  const wonA = allMatches.filter(m=> m.status==='final' && !m.halved && m.winner==='A');
+  const halved = allMatches.filter(m=> m.status==='final' && m.halved);
+  const pending = allMatches.filter(m=> m.status!=='final');
+  const wonB = allMatches.filter(m=> m.status==='final' && !m.halved && m.winner==='B');
+
+  const ordered = [...wonA, ...halved, ...pending, ...wonB];
+  const dividerPct = allMatches.length ? ((wonA.length + halved.length) / allMatches.length * 100) : 50;
+
+  let segHtml = '';
+  ordered.forEach(m=>{
+    let cls = 'pending';
+    if(m.status==='live') cls = m.leader==='A' ? 'live-a' : (m.leader==='B' ? 'live-b' : 'live-as');
+    if(m.status==='final') cls = m.halved ? 'half' : (m.winner==='A' ? 'a' : 'b');
+    segHtml += `<div class="tseg ${cls}" title="${escapeHtml(matchStatusText(m))}"></div>`;
+  });
+
+  return `<div class="tally-wrap">
+    <div class="tally-meta">${t.decided}/${t.total} matches complete</div>
+    <div class="tally-bar">
+      <div class="tally-segments">${segHtml}</div>
+      <div class="tally-divider" style="left:${dividerPct}%;"></div>
+      <div class="tally-num left">${fmtPts(t.a)}</div>
+      <div class="tally-num right">${fmtPts(t.b)}</div>
+    </div>
+  </div>`;
+}
+
+function renderBoard(){
+  const el = document.getElementById('view-board');
+  const t = computeTotals();
+  const aName = state.teamA || 'Team A';
+  const bName = state.teamB || 'Team B';
+  const aWon = t.a >= t.threshold;
+  const bWon = t.b >= t.threshold;
+
+  let html = '';
+  if(aWon || bWon){
+    const winner = aWon ? aName : bName;
+    html += `<div class="clinched-banner">${escapeHtml(winner)} retain / win the Cup</div>`;
+  }
+
+  html += `
+  <div class="matchup">
+    <div class="team-block a">
+      <div class="tname">${escapeHtml(aName)}</div>
+      <div class="tpoints">${fmtPts(t.a)}</div>
+    </div>
+    <div class="vs-mid">
+      <div class="label">of ${t.total}</div>
+      <div class="label" style="margin-top:8px;">to win</div>
+      <div class="need">${fmtPts(t.threshold)}</div>
+    </div>
+    <div class="team-block b">
+      <div class="tname">${escapeHtml(bName)}</div>
+      <div class="tpoints">${fmtPts(t.b)}</div>
+    </div>
+  </div>`;
+
+  html += renderTallyBar(t);
+
+  html += `<div class="trail-wrap"><div class="trail-grid">`;
+  state.sessions.forEach(s=>{
+    html += `<div class="trail-row">
+      <div class="trail-session-label"><b>${escapeHtml(s.label)}</b>${escapeHtml(s.sub)}</div>
+      <div class="trail-blocks">`;
+    s.matches.forEach(m=>{
+      let cls = 'pending';
+      if(m.status==='live') cls = m.leader==='A' ? 'live-a' : (m.leader==='B' ? 'live-b' : 'live-as');
+      if(m.status==='final'){
+        cls = m.halved ? 'half' : (m.winner==='A' ? 'a' : 'b');
+      }
+      html += `<div class="blk ${cls}" title="${escapeHtml(matchStatusText(m))}"></div>`;
+    });
+    html += `</div></div>`;
+  });
+  html += `</div></div>`;
+
+  html += `<div class="sessions-grid">`;
+  state.sessions.forEach(s=>{
+    html += `<div class="session-group">
+      <div class="session-head"><h3>${escapeHtml(s.label)}</h3><span>${escapeHtml(s.sub)}</span></div>`;
+    s.matches.forEach((m,idx)=>{
+      let pillCls = 'status-pill';
+      if(m.status==='live') pillCls += ' ' + (m.leader==='A' ? 'live-a' : (m.leader==='B' ? 'live-b' : 'live-as'));
+      if(m.status==='final') pillCls += ' decided ' + (m.halved ? 'half' : (m.winner==='A'?'a':'b'));
+      html += `<div class="match-row">
+        <div class="idx">${idx+1}</div>
+        <div class="side a">${escapeHtml(displayNames(m.playersA, idx))}</div>
+        <div class="${pillCls}">${matchStatusText(m)}</div>
+        <div class="side b">${escapeHtml(displayNames(m.playersB, idx))}</div>
+      </div>`;
+    });
+    html += `</div>`;
+  });
+  html += `</div>`;
+
+  el.innerHTML = html;
+}
+
+/* ---------------- UPDATE VIEW ---------------- */
+function renderUpdate(){
+  const el = document.getElementById('view-update');
+  if(!updateSessionId) updateSessionId = state.sessions[0].id;
+  let html = `<div class="picker-row">`;
+  state.sessions.forEach(s=>{
+    html += `<button data-sid="${s.id}" class="${s.id===updateSessionId?'active':''}">${escapeHtml(s.label)}</button>`;
+  });
+  html += `</div>`;
+
+  const session = state.sessions.find(s=>s.id===updateSessionId);
+  const isSingles = session.type==='singles';
+  const course = state.course;
+
+  function holeGridHtml(m, isFront){
+    const start = isFront ? 0 : 9;
+    const cols = Array.from({length:9},(_,i)=>start+i);
+    const th = label => `<th class="rowlabel">${label}</th>`;
+    return `<div class="hole-nine-label">${isFront?'Front nine':'Back nine'}</div>
+    <div class="hole-grid-wrap"><table class="hole-grid"><thead>
+    <tr>${th('Hole')}${cols.map(i=>`<th>${i+1}</th>`).join('')}</tr>
+    <tr>${th('Par')}${cols.map(i=>`<th>${course.holes[i].par}</th>`).join('')}</tr>
+    <tr>${th('S.I.')}${cols.map(i=>`<th>${course.holes[i].si}</th>`).join('')}</tr>
+    </thead><tbody>
+    <tr class="row-a">${th(escapeHtml(state.teamA))}${cols.map(i=>`<td><input type="number" min="1" max="12" data-hole="${i}" data-hside="A" value="${m.holeScoresA[i]}"></td>`).join('')}</tr>
+    <tr class="row-b">${th(escapeHtml(state.teamB))}${cols.map(i=>`<td><input type="number" min="1" max="12" data-hole="${i}" data-hside="B" value="${m.holeScoresB[i]}"></td>`).join('')}</tr>
+    </tbody></table></div>`;
+  }
+
+  function stepperHtml(m){
+    const idx = getStepperIdx(m);
+    const hole = course.holes[idx];
+    const rawA = m.holeScoresA[idx], rawB = m.holeScoresB[idx];
+    const dispA = (rawA==='' || rawA==null) ? '–' : rawA;
+    const dispB = (rawB==='' || rawB==null) ? '–' : rawB;
+    return `<div class="hole-stepper" data-cur="${idx}">
+      <div class="hs-nav">
+        <button class="hs-prev" ${idx===0?'disabled':''} type="button">‹</button>
+        <div class="hs-hole-info">
+          <div class="num">Hole ${idx+1}</div>
+          <div class="meta">Par ${hole.par} · S.I. ${hole.si}</div>
+        </div>
+        <button class="hs-next" ${idx===17?'disabled':''} type="button">›</button>
+      </div>
+      <div class="hs-score-row">
+        <div class="hs-team-name a">${escapeHtml(state.teamA)}</div>
+        <div class="hs-stepper">
+          <button class="hs-minus" data-hside="A" type="button">−</button>
+          <div class="val" data-valdisp="A">${dispA}</div>
+          <button class="hs-plus" data-hside="A" type="button">+</button>
+        </div>
+      </div>
+      <div class="hs-score-row">
+        <div class="hs-team-name b">${escapeHtml(state.teamB)}</div>
+        <div class="hs-stepper">
+          <button class="hs-minus" data-hside="B" type="button">−</button>
+          <div class="val" data-valdisp="B">${dispB}</div>
+          <button class="hs-plus" data-hside="B" type="button">+</button>
+        </div>
+      </div>
+      <button class="hs-save-btn" data-action="savehole" type="button">${idx===17?'Save hole 18':'Save hole & next hole →'}</button>
+    </div>`;
+  }
+
+  session.matches.forEach((m, idx)=>{
+    const hasHoleData = m.holeScoresA.some(x=>x!=='' && x!=null) || m.holeScoresB.some(x=>x!=='' && x!=null);
+    if(hasHoleData) computeFromHoles(m, course);
+    html += `<div class="edit-card" data-mid="${m.id}">
+      <div class="match-num"><span class="n">${idx+1}</span> Match ${idx+1}</div>
+      <div class="names">
+        <div class="names-col a">
+          <div class="col-label">${escapeHtml(state.teamA)}</div>
+          ${m.playersA.map((p,pi)=>`<input type="text" placeholder="${isSingles?'Player name':'Player '+(pi+1)}" value="${escapeHtml(p)}" data-side="A" data-pidx="${pi}">`).join('')}
+        </div>
+        <div class="names-col b">
+          <div class="col-label">${escapeHtml(state.teamB)}</div>
+          ${m.playersB.map((p,pi)=>`<input type="text" placeholder="${isSingles?'Player name':'Player '+(pi+1)}" value="${escapeHtml(p)}" data-side="B" data-pidx="${pi}">`).join('')}
+        </div>
+      </div>
+
+      <div class="entry-columns">
+        <div class="quick-col">
+          <div class="qr-heading">Quick result</div>
+          <div class="seg qr-state">
+            <button data-qstate="pending" class="${m.status==='pending'?'active':''}">Not started</button>
+            <button data-qstate="live" class="${m.status==='live'?'active':''}">Live</button>
+          </div>
+          <div class="subcontrols live-controls ${m.status==='live'?'show':''}" style="flex-direction:column;">
+            <div class="seg qr-leader">
+              <button data-leader="A" class="${m.leader==='A'?'active':''}">${escapeHtml(state.teamA)}</button>
+              <button data-leader="AS" class="${m.leader==='AS'?'active':''}">AS</button>
+              <button data-leader="B" class="${m.leader==='B'?'active':''}">${escapeHtml(state.teamB)}</button>
+            </div>
+            <div style="display:flex; gap:8px; width:100%;">
+              <div class="grp"><label>Up</label><input type="number" min="1" max="10" data-field="up" value="${m.up||1}"></div>
+              <div class="grp"><label>Thru</label><input type="number" min="1" max="18" data-field="thru" value="${m.thru||1}"></div>
+            </div>
+          </div>
+          <div class="qr-heading" style="margin-top:14px;">Mark result</div>
+          <div class="qr-result-buttons">
+            <button class="win-btn a ${m.status==='final' && !m.halved && m.winner==='A' ? 'active':''}" data-result="A">${escapeHtml(state.teamA)} win</button>
+            <button class="win-btn half ${m.status==='final' && m.halved ? 'active':''}" data-result="HALVED">Halved</button>
+            <button class="win-btn b ${m.status==='final' && !m.halved && m.winner==='B' ? 'active':''}" data-result="B">${escapeHtml(state.teamB)} win</button>
+          </div>
+          <div class="grp margin-grp ${m.status==='final' && !m.halved ? 'show':''}">
+            <label>Margin (optional)</label>
+            <input type="text" placeholder="e.g. 3&amp;2" data-field="margin" value="${escapeHtml(m.margin||'')}">
+          </div>
+        </div>
+
+        <div class="holes-col">
+          <div class="qr-heading">Hole-by-hole</div>
+          <div class="holes-status">${matchStatusText(m)}</div>
+          <div class="strokes-row">
+            <div class="grp"><label>Strokes to ${escapeHtml(state.teamA)}</label><input type="number" min="0" max="18" data-field="strokesA" value="${m.strokesA}"></div>
+            <div class="grp"><label>Strokes to ${escapeHtml(state.teamB)}</label><input type="number" min="0" max="18" data-field="strokesB" value="${m.strokesB}"></div>
+          </div>
+          ${stepperHtml(m)}
+          <button class="hs-toggle-full" data-action="togglegrid" type="button">Show full scorecard ▾</button>
+          <div class="full-grid-wrap">
+            ${holeGridHtml(m, true)}
+            ${holeGridHtml(m, false)}
+            <p class="note">Editing here overrides the stepper above — both write to the same scores.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="card-actions">
+        <button class="save-btn" data-action="save">Save match</button>
+        <button class="reset-btn" data-action="reset">Reset match</button>
+      </div>
+    </div>`;
+  });
+
+  el.innerHTML = html;
+
+  el.querySelectorAll('.picker-row button').forEach(btn=>{
+    btn.onclick = ()=>{ updateSessionId = btn.dataset.sid; renderUpdate(); };
+  });
+
+  el.querySelectorAll('.edit-card').forEach(card=>{
+    const mid = card.dataset.mid;
+    const match = session.matches.find(mm=>mm.id===mid);
+
+    card.querySelectorAll('.qr-state button').forEach(sbtn=>{
+      sbtn.onclick = ()=>{
+        match.status = sbtn.dataset.qstate;
+        match.winner = null; match.halved = false; match.margin = '';
+        if(match.status==='live' && !match.leader) match.leader = 'AS';
+        card.querySelectorAll('.qr-state button').forEach(b=>b.classList.remove('active'));
+        sbtn.classList.add('active');
+        card.querySelectorAll('.win-btn').forEach(b=>b.classList.remove('active'));
+        card.querySelector('.margin-grp').classList.remove('show');
+        card.querySelector('.live-controls').classList.toggle('show', match.status==='live');
+      };
+    });
+
+    card.querySelectorAll('.qr-leader button').forEach(lbtn=>{
+      lbtn.onclick = ()=>{
+        match.status = 'live';
+        match.leader = lbtn.dataset.leader;
+        match.winner = null; match.halved = false; match.margin = '';
+        card.querySelectorAll('.qr-leader button').forEach(b=>b.classList.remove('active'));
+        lbtn.classList.add('active');
+        card.querySelectorAll('.qr-state button').forEach(b=>b.classList.toggle('active', b.dataset.qstate==='live'));
+        card.querySelectorAll('.win-btn').forEach(b=>b.classList.remove('active'));
+        card.querySelector('.margin-grp').classList.remove('show');
+        card.querySelector('.live-controls').classList.add('show');
+      };
+    });
+
+    card.querySelectorAll('.win-btn').forEach(wbtn=>{
+      wbtn.onclick = ()=>{
+        match.status = 'final';
+        if(wbtn.dataset.result==='HALVED'){ match.halved = true; match.winner = null; }
+        else { match.halved = false; match.winner = wbtn.dataset.result; }
+        card.querySelectorAll('.win-btn').forEach(b=>b.classList.remove('active'));
+        wbtn.classList.add('active');
+        card.querySelectorAll('.qr-state button, .qr-leader button').forEach(b=>b.classList.remove('active'));
+        card.querySelector('.live-controls').classList.remove('show');
+        card.querySelector('.margin-grp').classList.toggle('show', !match.halved);
+      };
+    });
+
+    card.querySelectorAll('.names-col input[type=text]').forEach(inp=>{
+      inp.oninput = ()=>{
+        const side = inp.dataset.side;
+        const pidx = parseInt(inp.dataset.pidx);
+        if(side==='A') match.playersA[pidx] = inp.value;
+        else match.playersB[pidx] = inp.value;
+      };
+    });
+
+    card.querySelectorAll('.hole-grid input, .strokes-row input').forEach(inp=>{
+      inp.oninput = ()=>{
+        if(inp.dataset.field==='strokesA'){ match.strokesA = parseInt(inp.value)||0; }
+        else if(inp.dataset.field==='strokesB'){ match.strokesB = parseInt(inp.value)||0; }
+        else {
+          const hi = parseInt(inp.dataset.hole);
+          if(inp.dataset.hside==='A') match.holeScoresA[hi] = inp.value;
+          else match.holeScoresB[hi] = inp.value;
+        }
+        computeFromHoles(match, state.course);
+        card.querySelector('.holes-status').textContent = matchStatusText(match);
+      };
+    });
+
+    const prevBtn = card.querySelector('.hs-prev');
+    if(prevBtn) prevBtn.onclick = ()=>{ stepperIdx[match.id] = Math.max(0, getStepperIdx(match)-1); renderUpdate(); };
+    const nextBtn = card.querySelector('.hs-next');
+    if(nextBtn) nextBtn.onclick = ()=>{ stepperIdx[match.id] = Math.min(17, getStepperIdx(match)+1); renderUpdate(); };
+
+    card.querySelectorAll('.hs-minus, .hs-plus').forEach(btn=>{
+      btn.onclick = ()=>{
+        const idx = getStepperIdx(match);
+        const side = btn.dataset.hside;
+        const arr = side==='A' ? match.holeScoresA : match.holeScoresB;
+        let cur = parseInt(arr[idx]);
+        if(isNaN(cur)) cur = state.course.holes[idx].par;
+        cur = btn.classList.contains('hs-plus') ? Math.min(12, cur+1) : Math.max(1, cur-1);
+        arr[idx] = cur;
+        card.querySelector(`.val[data-valdisp="${side}"]`).textContent = cur;
+      };
+    });
+
+    const toggleGridBtn = card.querySelector('[data-action=togglegrid]');
+    if(toggleGridBtn) toggleGridBtn.onclick = ()=>{
+      const wrap = card.querySelector('.full-grid-wrap');
+      const showing = wrap.classList.toggle('show');
+      toggleGridBtn.textContent = showing ? 'Hide full scorecard ▴' : 'Show full scorecard ▾';
+    };
+
+    const saveHoleBtn = card.querySelector('[data-action=savehole]');
+    if(saveHoleBtn) saveHoleBtn.onclick = async ()=>{
+      const idx = getStepperIdx(match);
+      if(match.holeScoresA[idx]==='' || match.holeScoresA[idx]==null) match.holeScoresA[idx] = state.course.holes[idx].par;
+      if(match.holeScoresB[idx]==='' || match.holeScoresB[idx]==null) match.holeScoresB[idx] = state.course.holes[idx].par;
+      computeFromHoles(match, state.course);
+      saveHoleBtn.textContent = 'Saving…';
+      await loadStateMergeOne(session.id, match);
+      stepperIdx[match.id] = Math.min(17, idx+1);
+      renderUpdate();
+      if(currentView==='board') renderBoard();
+      if(currentView==='mvp') renderMVP();
+    };
+
+    card.querySelectorAll('.live-controls input[data-field], .margin-grp input[data-field]').forEach(inp=>{
+      inp.oninput = ()=>{
+        const f = inp.dataset.field;
+        if(f==='up'){ match.up = parseInt(inp.value)||1; }
+        else if(f==='thru'){ match.thru = parseInt(inp.value)||1; }
+        else if(f==='margin'){ match.margin = inp.value; }
+      };
+    });
+
+    card.querySelector('[data-action=save]').onclick = async ()=>{
+      const saveBtn = card.querySelector('[data-action=save]');
+      const hasHoleData = match.holeScoresA.some(x=>x!=='' && x!=null) || match.holeScoresB.some(x=>x!=='' && x!=null);
+      if(hasHoleData) computeFromHoles(match, state.course);
+      saveBtn.textContent = 'Saving…';
+      await loadStateMergeOne(session.id, match);
+      saveBtn.textContent = 'Saved ✓';
+      saveBtn.classList.add('saved');
+      setTimeout(()=>{ saveBtn.textContent='Save match'; saveBtn.classList.remove('saved'); }, 1400);
+      if(currentView==='board') renderBoard();
+      if(currentView==='mvp') renderMVP();
+    };
+
+    card.querySelector('[data-action=reset]').onclick = async ()=>{
+      if(!confirm('Reset this match? This clears the players, scores and result.')) return;
+      const fresh = shapeMatch({ id: match.id }, session.type);
+      Object.keys(match).forEach(k=> delete match[k]);
+      Object.assign(match, fresh);
+      delete stepperIdx[match.id];
+      await loadStateMergeOne(session.id, match);
+      renderUpdate();
+      if(currentView==='board') renderBoard();
+      if(currentView==='mvp') renderMVP();
+    };
+  });
+}
+
+// Fetch latest shared state, apply this one match's edits on top, save.
+async function loadStateMergeOne(sessionId, editedMatch){
+  let fresh;
+  try{
+    const snap = await dbRef.once('value');
+    const val = snap.val();
+    fresh = val || defaultState();
+  }catch(e){ fresh = defaultState(); }
+  if(!fresh.sessions) fresh.sessions = defaultState().sessions;
+  const s = fresh.sessions.find(ss=>ss.id===sessionId);
+  if(s){
+    const idx = s.matches.findIndex(mm=>mm.id===editedMatch.id);
+    if(idx>-1) s.matches[idx] = editedMatch;
+  }
+  fresh.title = state.title; fresh.teamA = state.teamA; fresh.teamB = state.teamB;
+  fresh.colorA = state.colorA; fresh.colorB = state.colorB; fresh.course = state.course;
+  state = fresh;
+  state.sessions.forEach(ss=>{ ss.matches = ss.matches.map(m=>shapeMatch(m, ss.type)); });
+  await saveState();
+}
+
+/* ---------------- MVP VIEW ---------------- */
+function parseMargin(str){
+  if(!str) return 0;
+  const m = str.match(/(\d+)/);
+  return m ? parseInt(m[1]) : 0;
+}
+
+function computeMVP(){
+  const players = {};
+  state.sessions.forEach(s=>{
+    s.matches.forEach(m=>{
+      if(m.status!=='final' || m.halved || !m.winner) return;
+      const winners = m.winner==='A' ? m.playersA : m.playersB;
+      const marginNum = parseMargin(m.margin);
+      winners.forEach(nm=>{
+        const trimmed = (nm||'').trim();
+        if(!trimmed) return;
+        const key = trimmed.toLowerCase();
+        if(!players[key]) players[key] = {name:trimmed, side:m.winner, wins:0, bestMargin:0, bestMarginText:''};
+        players[key].wins += 1;
+        if(marginNum >= players[key].bestMargin){
+          players[key].bestMargin = marginNum;
+          players[key].bestMarginText = m.margin || '';
+        }
+      });
+    });
+  });
+  return Object.values(players).sort((a,b)=> b.wins-a.wins || b.bestMargin-a.bestMargin);
+}
+
+function renderMVP(){
+  const el = document.getElementById('view-mvp');
+  const ranked = computeMVP();
+  if(ranked.length===0){
+    el.innerHTML = `<div class="mvp-empty">No results yet.<br>MVP standings appear here once matches are marked Final in the Update tab.</div>`;
+    return;
+  }
+  const topWins = ranked[0].wins, topMargin = ranked[0].bestMargin;
+  let html = '';
+  ranked.forEach((p, i)=>{
+    const isTop = p.wins===topWins && p.bestMargin===topMargin;
+    const teamName = p.side==='A' ? state.teamA : state.teamB;
+    html += `<div class="mvp-row ${isTop?'top':''}">
+      <div class="mvp-rank">${isTop?'★':(i+1)}</div>
+      <div class="mvp-name-wrap">
+        <div class="mvp-name">${isTop?'<span class=\"mvp-crown\">🏆</span>':''}${escapeHtml(p.name)}</div>
+        <div class="mvp-team" style="color:${p.side==='A'?'var(--color-a)':'var(--color-b)'}">${escapeHtml(teamName)}</div>
+      </div>
+      <div class="mvp-stats">
+        <div class="mvp-wins">${p.wins}</div>
+        <div class="mvp-margin">win${p.wins===1?'':'s'}${p.bestMarginText? ' · best '+escapeHtml(p.bestMarginText):''}</div>
+      </div>
+    </div>`;
+  });
+  el.innerHTML = html;
+}
+
+/* ---------------- SETUP VIEW ---------------- */
+function colorSwatchHtml(side, current){
+  return COLOR_SWATCHES.map(c=>{
+    const sel = c.toLowerCase()===current.toLowerCase() ? 'selected' : '';
+    return `<div class="swatch ${sel}" style="background:${c}" data-side="${side}" data-color="${c}"></div>`;
+  }).join('');
+}
+
+function renderSetup(){
+  const el = document.getElementById('view-setup');
+
+  function courseGridHtml(isFront){
+    const start = isFront ? 0 : 9;
+    const cols = Array.from({length:9},(_,i)=>start+i);
+    const th = label => `<th class="rowlabel">${label}</th>`;
+    return `<div class="hole-nine-label">${isFront?'Front nine':'Back nine'}</div>
+    <div class="hole-grid-wrap"><table class="hole-grid"><thead>
+    <tr>${th('Hole')}${cols.map(i=>`<th>${i+1}</th>`).join('')}</tr>
+    </thead><tbody>
+    <tr>${th('Par')}${cols.map(i=>`<td><input type="number" min="3" max="6" data-hole="${i}" data-cfield="par" value="${state.course.holes[i].par}"></td>`).join('')}</tr>
+    <tr>${th('S.I.')}${cols.map(i=>`<td><input type="number" min="1" max="18" data-hole="${i}" data-cfield="si" value="${state.course.holes[i].si}"></td>`).join('')}</tr>
+    </tbody></table></div>`;
+  }
+  let html = `
+  <div class="setup-card">
+    <h3>Team names &amp; colours</h3>
+    <div class="teamname-row">
+      <input type="text" class="a" id="teamAInput" value="${escapeHtml(state.teamA)}">
+      <input type="text" class="b" id="teamBInput" value="${escapeHtml(state.teamB)}">
+    </div>
+    <div class="color-block">
+      <div class="color-col a">
+        <div class="cc-label">${escapeHtml(state.teamA)}</div>
+        <div class="swatches" id="swatchesA">${colorSwatchHtml('A', state.colorA)}</div>
+        <div class="custom-color-row">
+          <input type="color" id="customColorA" value="${state.colorA}">
+          <span>custom</span>
+        </div>
+      </div>
+      <div class="color-col b">
+        <div class="cc-label">${escapeHtml(state.teamB)}</div>
+        <div class="swatches" id="swatchesB">${colorSwatchHtml('B', state.colorB)}</div>
+        <div class="custom-color-row">
+          <input type="color" id="customColorB" value="${state.colorB}">
+          <span>custom</span>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="setup-card">
+    <h3>Session sizes</h3>
+    <div class="note" style="margin-bottom:10px;">Set how many matches are being played in each session. Points required to win adjusts automatically. Reducing a count trims matches from the end; increasing adds blank ones.</div>`;
+  state.sessions.forEach(s=>{
+    html += `<div class="setup-row">
+      <label>${escapeHtml(s.label)} — ${escapeHtml(s.sub)}</label>
+      <input type="number" min="0" max="16" value="${s.count}" data-sid="${s.id}">
+    </div>`;
+  });
+  html += `</div>
+  <div class="setup-card">
+    <h3>Course scorecard</h3>
+    <div class="note" style="margin-bottom:10px;">Par and stroke index (S.I.) for each hole — used to work out handicap strokes in the Update tab's hole-by-hole scoring.</div>
+    ${courseGridHtml(true)}
+    ${courseGridHtml(false)}
+  </div>`;
+  html += `
+  <button class="apply-btn" id="applySetup">Apply changes</button>
+  <p class="note" style="text-align:center; margin-top:14px;">Open the Board view on a TV or laptop, and the Update view on each scorer's phone — all devices share the same live event.</p>
+  `;
+  el.innerHTML = html;
+
+  function selectSwatch(side, color){
+    if(side==='A') state.colorA = color; else state.colorB = color;
+    applyColors();
+    document.getElementById('swatchesA').innerHTML = colorSwatchHtml('A', state.colorA);
+    document.getElementById('swatchesB').innerHTML = colorSwatchHtml('B', state.colorB);
+    document.getElementById('customColorA').value = state.colorA;
+    document.getElementById('customColorB').value = state.colorB;
+    wireSwatches();
+  }
+
+  function wireSwatches(){
+    el.querySelectorAll('.swatch').forEach(sw=>{
+      sw.onclick = async ()=>{
+        selectSwatch(sw.dataset.side, sw.dataset.color);
+        await saveState();
+        renderBoard();
+      };
+    });
+  }
+  wireSwatches();
+
+  document.getElementById('customColorA').oninput = async (e)=>{
+    selectSwatch('A', e.target.value);
+    await saveState();
+    renderBoard();
+  };
+  document.getElementById('customColorB').oninput = async (e)=>{
+    selectSwatch('B', e.target.value);
+    await saveState();
+    renderBoard();
+  };
+
+  el.querySelectorAll('.hole-grid input[data-cfield]').forEach(inp=>{
+    inp.oninput = ()=>{
+      const hi = parseInt(inp.dataset.hole);
+      const val = parseInt(inp.value)||0;
+      state.course.holes[hi][inp.dataset.cfield] = val;
+    };
+  });
+
+  document.getElementById('applySetup').onclick = async ()=>{
+    state.teamA = document.getElementById('teamAInput').value.trim() || 'Team A';
+    state.teamB = document.getElementById('teamBInput').value.trim() || 'Team B';
+    el.querySelectorAll('input[data-sid]').forEach(inp=>{
+      const sid = inp.dataset.sid;
+      const newCount = Math.max(0, parseInt(inp.value)||0);
+      const s = state.sessions.find(ss=>ss.id===sid);
+      s.count = newCount;
+      s.matches = buildMatches(sid, newCount, s.matches, s.type);
+    });
+    await saveState();
+    renderAll();
+    const btn = document.getElementById('applySetup');
+    btn.textContent = 'Applied ✓';
+    setTimeout(()=>{ btn.textContent='Apply changes'; }, 1400);
+  };
+}
+
+function escapeHtml(str){
+  return (str||'').toString().replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function renderAll(){
+  renderBoard();
+  renderUpdate();
+  renderMVP();
+  renderSetup();
+  const bt = document.getElementById('brandTitle');
+  if(document.activeElement !== bt) bt.textContent = state.title;
+}
+
+function setView(v){
+  currentView = v;
+  document.querySelectorAll('.nav button').forEach(b=>b.classList.toggle('active', b.dataset.view===v));
+  document.getElementById('view-board').classList.toggle('hidden', v!=='board');
+  document.getElementById('view-update').classList.toggle('hidden', v!=='update');
+  document.getElementById('view-mvp').classList.toggle('hidden', v!=='mvp');
+  document.getElementById('view-setup').classList.toggle('hidden', v!=='setup');
+}
+
+document.querySelectorAll('.nav button').forEach(btn=>{
+  btn.onclick = async ()=>{
+    await loadState();
+    renderAll();
+    setView(btn.dataset.view);
+  };
+});
+
+// Editable event title
+const brandTitleEl = document.getElementById('brandTitle');
+brandTitleEl.addEventListener('keydown', (e)=>{
+  if(e.key==='Enter'){ e.preventDefault(); brandTitleEl.blur(); }
+});
+brandTitleEl.addEventListener('blur', async ()=>{
+  const val = brandTitleEl.textContent.trim() || 'Cup Live';
+  brandTitleEl.textContent = val;
+  document.title = val;
+  state.title = val;
+  await saveState();
+});
+
+// Poll for live updates while on the Board view (so a TV/laptop display stays current
+// as scorers update from their phones).
+setInterval(async ()=>{
+  if(currentView==='board'){
+    await loadState();
+    renderBoard();
+  }
+}, 4000);
+
+(async function init(){
+  await loadState();
+  document.title = state.title;
+  renderAll();
+})();
+</script>
+</body>
+</html>
