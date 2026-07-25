@@ -790,7 +790,7 @@ function renderBoard(){
         <div class="idx">${idx+1}</div>
         <div class="side a">${displayNamesHtml(m.playersA, idx)}</div>
         <div class="${pillCls}">${matchStatusText(m)}</div>
-        <div class="side b">${escapeHtml(displayNames(m.playersB, idx))}</div>
+        <div class="side a">${displayNamesHtml(m.playersB, idx)}</div>
       </div>`;
     });
     html += `</div>`;
