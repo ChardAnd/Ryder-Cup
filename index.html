@@ -375,8 +375,13 @@ button{font-family:inherit;}
   padding-right:6px; white-space:nowrap; color:var(--ink);
 }
 .hole-grid input{
-  width:28px; padding:5px 2px; text-align:center; border:1px solid var(--line-strong); border-radius:5px;
+  width:34px; padding:5px 1px; text-align:center; border:1px solid var(--line-strong); border-radius:5px;
   background:#fff; color:var(--ink); font-family:'IBM Plex Mono',monospace; font-size:12px;
+  -moz-appearance:textfield;
+}
+.hole-grid input::-webkit-outer-spin-button,
+.hole-grid input::-webkit-inner-spin-button{
+  -webkit-appearance:none; margin:0;
 }
 .hole-grid tr.row-a input{border-bottom:2px solid var(--color-a);}
 .hole-grid tr.row-b input{border-bottom:2px solid var(--color-b);}
