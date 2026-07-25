@@ -677,15 +677,15 @@ function renderTallyBar(t){
   const leaningB = allMatches.filter(m=> m.status==='live' && m.leader==='B');
   const wonB = allMatches.filter(m=> m.status==='final' && !m.halved && m.winner==='B');
 
-  const seg = (cls, m) => `<div class="tseg ${cls}" title="${escapeHtml(matchStatusText(m))}"></div>`;
+const seg = (cls, m) => `<div class="tseg ${cls}" title="${escapeHtml(matchStatusText(m))}"></div>`;
   let segHtml = '';
-  wonA.forEach(m=> segHtml += seg('a', m));
+  halved.forEach(m=> segHtml += seg('half-a', m)); // A-half sits right at the edge, by A's number
   leaningA.forEach(m=> segHtml += seg('live-a', m));
-  halved.forEach(m=> segHtml += seg('half-a', m)); // each halved match's A-half sits by team A
+  wonA.forEach(m=> segHtml += seg('a', m));
   neutral.forEach(m=> segHtml += seg('pending', m));
-  halved.forEach(m=> segHtml += seg('half-b', m)); // and its B-half sits by team B
-  leaningB.forEach(m=> segHtml += seg('live-b', m));
   wonB.forEach(m=> segHtml += seg('b', m));
+  leaningB.forEach(m=> segHtml += seg('live-b', m));
+  halved.forEach(m=> segHtml += seg('half-b', m)); // B-half sits right at the edge, by B's number
 
   return `<div class="tally-wrap">
     <div class="tally-meta">${t.decided}/${t.total} matches complete</div>
