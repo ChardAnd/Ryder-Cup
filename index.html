@@ -829,13 +829,16 @@ function renderUpdate(){
   if(!selectedMatchId){
     html += `<div class="match-tile-grid">`;
     session.matches.forEach((m, idx)=>{
+let mtCls = 'mt-status';
+      if(m.status==='live') mtCls += ' ' + (m.leader==='A' ? 'live-a' : (m.leader==='B' ? 'live-b' : 'live-as'));
+      if(m.status==='final') mtCls += ' decided ' + (m.halved ? 'half' : (m.winner==='A'?'a':'b'));
       html += `<button class="match-tile" data-select="${m.id}" type="button">
         <div class="mt-num">${idx+1}</div>
         <div class="mt-names">
           <div class="a">${escapeHtml(displayNames(m.playersA, idx))}</div>
           <div class="b">${escapeHtml(displayNames(m.playersB, idx))}</div>
         </div>
-        <div class="mt-status">${matchStatusText(m)}</div>
+        <div class="${mtCls}">${matchStatusText(m)}</div>
       </button>`;
     });
     html += `</div>`;
