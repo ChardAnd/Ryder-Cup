@@ -670,7 +670,7 @@ function computeFromHoles(m, course){
     }
   } else {
     m.status='live';
-    m.leader = up>0 ? 'A' : (up<0 ? 'B' : 'AS');
+    m.leader = up>0 ? 'A' : (up<0 ? 'B' : 'A/S');
     m.up = Math.abs(up) || 1;
     m.thru = holesPlayed;
   }
@@ -682,7 +682,7 @@ function matchStatusText(m){
     return (m.margin ? m.margin.toUpperCase() : 'WIN');
   }
   if(m.status==='live'){
-    if(m.leader==='AS') return 'AS THRU '+m.thru;
+    if(m.leader==='A/S') return 'A/S THRU '+m.thru;
     return (m.up||1)+' UP THRU '+m.thru;
   }
   return 'NOT STARTED';
@@ -712,7 +712,7 @@ function renderTallyBar(t){
   const wonA = allMatches.filter(m=> m.status==='final' && !m.halved && m.winner==='A');
   const leaningA = allMatches.filter(m=> m.status==='live' && m.leader==='A');
   const halved = allMatches.filter(m=> m.status==='final' && m.halved);
-  const neutral = allMatches.filter(m=> m.status==='pending' || (m.status==='live' && m.leader==='AS'));
+  const neutral = allMatches.filter(m=> m.status==='pending' || (m.status==='live' && m.leader==='A/S'));
   const leaningB = allMatches.filter(m=> m.status==='live' && m.leader==='B');
   const wonB = allMatches.filter(m=> m.status==='final' && !m.halved && m.winner==='B');
 
