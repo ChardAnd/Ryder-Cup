@@ -682,7 +682,7 @@ function matchStatusText(m){
     return (m.margin ? m.margin.toUpperCase() : 'WIN');
   }
   if(m.status==='live'){
-    if(m.leader==='A/S') return 'A/S THRU '+m.thru;
+    if(m.leader==='AS') return 'A/S THRU '+m.thru;
     return (m.up||1)+' UP THRU '+m.thru;
   }
   return 'NOT STARTED';
