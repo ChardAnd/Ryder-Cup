@@ -678,7 +678,7 @@ function computeFromHoles(m, course){
 
 function matchStatusText(m){
   if(m.status==='final'){
-    if(m.halved) return 'HALVED';
+    if(m.halved) return 'A/S';
     return (m.margin ? m.margin.toUpperCase() : 'WIN');
   }
   if(m.status==='live'){
