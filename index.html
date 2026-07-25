@@ -241,7 +241,6 @@ button{font-family:inherit;}
 .match-tile .mt-status.live-a{color:var(--color-a); border-color:var(--color-a); background:rgba(42,66,112,0.08);}
 .match-tile .mt-status.live-b{color:var(--color-b); border-color:var(--color-b); background:rgba(154,58,44,0.08);}
 .match-tile .mt-status.live-as{color:var(--neutral); border-color:var(--neutral); background:rgba(139,150,134,0.12);}
-}
 .back-to-matches{
   display:inline-flex; align-items:center; gap:6px; background:none; border:none; color:var(--sage-dark);
   font-weight:700; font-size:13px; cursor:pointer; padding:8px 0 14px; font-family:inherit;
@@ -296,15 +295,6 @@ button{font-family:inherit;}
 }
 .mode-toggle button.active{background:var(--sage); color:#fff; border-color:var(--sage);}
 
-.entry-columns{display:flex; gap:18px; align-items:flex-start;}
-.entry-columns .quick-col{flex:1; min-width:190px;}
-.entry-columns .holes-col{flex:1.7; min-width:280px; border-left:1px solid var(--line); padding-left:18px;}
-@media (max-width:760px){
-  .entry-columns{flex-direction:column;}
-  .entry-columns .holes-col{border-left:none; padding-left:0; border-top:1px solid var(--line); padding-top:16px; margin-top:4px; order:-1;}
-  .entry-columns .quick-col{border-top:1px solid var(--line); padding-top:16px; margin-top:4px;}
-}
-
 .hole-stepper{background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:16px; margin-bottom:10px;}
 .hs-nav{display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;}
 .hs-nav button{
@@ -336,24 +326,6 @@ button{font-family:inherit;}
 .full-grid-wrap{display:none;}
 .full-grid-wrap.show{display:block;}
 .qr-heading{font-size:11px; text-transform:uppercase; letter-spacing:.07em; font-weight:700; color:var(--ink-dim); margin-bottom:8px;}
-.qr-result-buttons{display:flex; flex-direction:column; gap:8px; margin-bottom:10px;}
-.win-btn{
-  width:100%; padding:12px 10px; border-radius:9px; font-weight:700; font-size:13.5px;
-  cursor:pointer; text-align:center; background:#fff; transition:all .12s;
-}
-.win-btn.a{color:var(--color-a); border:1.5px solid var(--color-a);}
-.win-btn.b{color:var(--color-b); border:1.5px solid var(--color-b);}
-.win-btn.half{color:var(--gold); border:1.5px solid var(--gold);}
-.win-btn.a.active{background:var(--color-a); color:#fff;}
-.win-btn.b.active{background:var(--color-b); color:#fff;}
-.win-btn.half.active{background:var(--gold); color:#fff;}
-.margin-grp{display:none;}
-.margin-grp.show{display:block;}
-.margin-grp label{display:block; font-size:10.5px; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-dim); margin-bottom:4px;}
-.margin-grp input{
-  width:100%; background:#fff; border:1px solid var(--line-strong); border-radius:7px;
-  color:var(--ink); padding:8px; font-size:13px; font-family:inherit;
-}
 .card-actions{display:flex; gap:8px; margin-top:16px;}
 .card-actions .save-btn{flex:2;}
 .reset-btn{
@@ -637,15 +609,27 @@ function computeFromHoles(m, course){
   let up = 0, holesPlayed = 0, decidedAtHole = null;
   for(let i=0;i<18;i++){
     const rawA = m.holeScoresA[i], rawB = m.holeScoresB[i];
-    if(rawA===''||rawA==null||rawB===''||rawB==null) break;
-    const gA = Number(rawA), gB = Number(rawB);
-    if(isNaN(gA) || isNaN(gB)) break;
+    // A hole only counts once both sides have either a gross score or the 'PU' (picked up) marker.
+    // A plain blank means the hole simply hasn't been reached yet.
+    const aReady = rawA==='PU' || !(rawA===''||rawA==null);
+    const bReady = rawB==='PU' || !(rawB===''||rawB==null);
+    if(!aReady || !bReady) break;
     holesPlayed = i+1;
-    const si = holes[i].si;
-    const strokeA = (m.strokesA||0) >= si ? 1 : 0;
-    const strokeB = (m.strokesB||0) >= si ? 1 : 0;
-    const netA = gA - strokeA, netB = gB - strokeB;
-    if(netA < netB) up += 1; else if(netB < netA) up -= 1;
+    if(rawA==='PU' && rawB==='PU'){
+      // both picked up — halved, no change to the running score
+    } else if(rawA==='PU'){
+      up -= 1; // A conceded, B wins the hole outright
+    } else if(rawB==='PU'){
+      up += 1; // B conceded, A wins the hole outright
+    } else {
+      const gA = Number(rawA), gB = Number(rawB);
+      if(isNaN(gA) || isNaN(gB)) break;
+      const si = holes[i].si;
+      const strokeA = (m.strokesA||0) >= si ? 1 : 0;
+      const strokeB = (m.strokesB||0) >= si ? 1 : 0;
+      const netA = gA - strokeA, netB = gB - strokeB;
+      if(netA < netB) up += 1; else if(netB < netA) up -= 1;
+    }
     const remaining = 18 - (i+1);
     if(Math.abs(up) > remaining){ decidedAtHole = i+1; break; }
   }
@@ -829,7 +813,7 @@ function renderUpdate(){
   if(!selectedMatchId){
     html += `<div class="match-tile-grid">`;
     session.matches.forEach((m, idx)=>{
-let mtCls = 'mt-status';
+      let mtCls = 'mt-status';
       if(m.status==='live') mtCls += ' ' + (m.leader==='A' ? 'live-a' : (m.leader==='B' ? 'live-b' : 'live-as'));
       if(m.status==='final') mtCls += ' decided ' + (m.halved ? 'half' : (m.winner==='A'?'a':'b'));
       html += `<button class="match-tile" data-select="${m.id}" type="button">
@@ -864,8 +848,8 @@ let mtCls = 'mt-status';
     <tr>${th('Par')}${cols.map(i=>`<th>${course.holes[i].par}</th>`).join('')}</tr>
     <tr>${th('S.I.')}${cols.map(i=>`<th>${course.holes[i].si}</th>`).join('')}</tr>
     </thead><tbody>
-    <tr class="row-a">${th(escapeHtml(state.teamA))}${cols.map(i=>`<td><input type="number" min="1" max="12" data-hole="${i}" data-hside="A" value="${m.holeScoresA[i]}"></td>`).join('')}</tr>
-    <tr class="row-b">${th(escapeHtml(state.teamB))}${cols.map(i=>`<td><input type="number" min="1" max="12" data-hole="${i}" data-hside="B" value="${m.holeScoresB[i]}"></td>`).join('')}</tr>
+    <tr class="row-a">${th(escapeHtml(state.teamA))}${cols.map(i=>`<td><input type="number" min="1" max="12" data-hole="${i}" data-hside="A" value="${m.holeScoresA[i]==='PU'?'':m.holeScoresA[i]}"></td>`).join('')}</tr>
+    <tr class="row-b">${th(escapeHtml(state.teamB))}${cols.map(i=>`<td><input type="number" min="1" max="12" data-hole="${i}" data-hside="B" value="${m.holeScoresB[i]==='PU'?'':m.holeScoresB[i]}"></td>`).join('')}</tr>
     </tbody></table></div>`;
   }
 
@@ -873,8 +857,8 @@ let mtCls = 'mt-status';
     const idx = getStepperIdx(m);
     const hole = course.holes[idx];
     const rawA = m.holeScoresA[idx], rawB = m.holeScoresB[idx];
-    const dispA = (rawA==='' || rawA==null) ? '–' : rawA;
-    const dispB = (rawB==='' || rawB==null) ? '–' : rawB;
+    const dispA = (rawA==='' || rawA==null) ? '–' : (rawA==='PU' ? 'PU' : rawA);
+    const dispB = (rawB==='' || rawB==null) ? '–' : (rawB==='PU' ? 'PU' : rawB);
     return `<div class="hole-stepper" data-cur="${idx}">
       <div class="hs-nav">
         <button class="hs-prev" ${idx===0?'disabled':''} type="button">‹</button>
@@ -901,6 +885,7 @@ let mtCls = 'mt-status';
         </div>
       </div>
       <button class="hs-save-btn" data-action="savehole" type="button">${idx===17?'Save hole 18':'Save hole & next hole →'}</button>
+      <p class="note" style="text-align:center; margin-top:8px;">Leave a side blank (–) and save to mark that hole picked up — conceded if the other side has a score, halved if both are left blank.</p>
     </div>`;
   }
 
@@ -921,50 +906,19 @@ let mtCls = 'mt-status';
         </div>
       </div>
 
-      <div class="entry-columns">
-        <div class="quick-col">
-          <div class="qr-heading">Quick result</div>
-          <div class="seg qr-state">
-            <button data-qstate="pending" class="${m.status==='pending'?'active':''}">Not started</button>
-            <button data-qstate="live" class="${m.status==='live'?'active':''}">Live</button>
-          </div>
-          <div class="subcontrols live-controls ${m.status==='live'?'show':''}" style="flex-direction:column;">
-            <div class="seg qr-leader">
-              <button data-leader="A" class="${m.leader==='A'?'active':''}">${escapeHtml(state.teamA)}</button>
-              <button data-leader="AS" class="${m.leader==='AS'?'active':''}">AS</button>
-              <button data-leader="B" class="${m.leader==='B'?'active':''}">${escapeHtml(state.teamB)}</button>
-            </div>
-            <div style="display:flex; gap:8px; width:100%;">
-              <div class="grp"><label>Up</label><input type="number" min="1" max="10" data-field="up" value="${m.up||1}"></div>
-              <div class="grp"><label>Thru</label><input type="number" min="1" max="18" data-field="thru" value="${m.thru||1}"></div>
-            </div>
-          </div>
-          <div class="qr-heading" style="margin-top:14px;">Mark result</div>
-          <div class="qr-result-buttons">
-            <button class="win-btn a ${m.status==='final' && !m.halved && m.winner==='A' ? 'active':''}" data-result="A">${escapeHtml(state.teamA)} win</button>
-            <button class="win-btn half ${m.status==='final' && m.halved ? 'active':''}" data-result="HALVED">Halved</button>
-            <button class="win-btn b ${m.status==='final' && !m.halved && m.winner==='B' ? 'active':''}" data-result="B">${escapeHtml(state.teamB)} win</button>
-          </div>
-          <div class="grp margin-grp ${m.status==='final' && !m.halved ? 'show':''}">
-            <label>Margin (optional)</label>
-            <input type="text" placeholder="e.g. 3&amp;2" data-field="margin" value="${escapeHtml(m.margin||'')}">
-          </div>
+      <div class="holes-col">
+        <div class="qr-heading">Hole-by-hole</div>
+        <div class="holes-status">${matchStatusText(m)}</div>
+        <div class="strokes-row">
+          <div class="grp"><label>Strokes to ${escapeHtml(state.teamA)}</label><input type="number" min="0" max="18" data-field="strokesA" value="${m.strokesA}"></div>
+          <div class="grp"><label>Strokes to ${escapeHtml(state.teamB)}</label><input type="number" min="0" max="18" data-field="strokesB" value="${m.strokesB}"></div>
         </div>
-
-        <div class="holes-col">
-          <div class="qr-heading">Hole-by-hole</div>
-          <div class="holes-status">${matchStatusText(m)}</div>
-          <div class="strokes-row">
-            <div class="grp"><label>Strokes to ${escapeHtml(state.teamA)}</label><input type="number" min="0" max="18" data-field="strokesA" value="${m.strokesA}"></div>
-            <div class="grp"><label>Strokes to ${escapeHtml(state.teamB)}</label><input type="number" min="0" max="18" data-field="strokesB" value="${m.strokesB}"></div>
-          </div>
-          ${stepperHtml(m)}
-          <button class="hs-toggle-full" data-action="togglegrid" type="button">Show full scorecard ▾</button>
-          <div class="full-grid-wrap">
-            ${holeGridHtml(m, true)}
-            ${holeGridHtml(m, false)}
-            <p class="note">Editing here overrides the stepper above — both write to the same scores.</p>
-          </div>
+        ${stepperHtml(m)}
+        <button class="hs-toggle-full" data-action="togglegrid" type="button">Show full scorecard ▾</button>
+        <div class="full-grid-wrap">
+          ${holeGridHtml(m, true)}
+          ${holeGridHtml(m, false)}
+          <p class="note">Editing here overrides the stepper above — both write to the same scores.</p>
         </div>
       </div>
 
@@ -987,49 +941,6 @@ let mtCls = 'mt-status';
   el.querySelectorAll('.edit-card').forEach(card=>{
     const mid = card.dataset.mid;
     const match = session.matches.find(mm=>mm.id===mid);
-
-card.querySelectorAll('.hs-minus, .hs-plus').forEach(btn=>{
-      btn.onclick = ()=>{
-        const idx = getStepperIdx(match);
-        const side = btn.dataset.hside;
-        const arr = side==='A' ? match.holeScoresA : match.holeScoresB;
-        let cur = parseInt(arr[idx]);
-        if(isNaN(cur)){
-          cur = state.course.holes[idx].par; // first tap just fills in par, doesn't add/subtract yet
-        } else {
-          cur = btn.classList.contains('hs-plus') ? Math.min(12, cur+1) : Math.max(1, cur-1);
-        }
-        arr[idx] = cur;
-        card.querySelector(`.val[data-valdisp="${side}"]`).textContent = cur;
-      };
-    });
-
-    card.querySelectorAll('.qr-leader button').forEach(lbtn=>{
-      lbtn.onclick = ()=>{
-        match.status = 'live';
-        match.leader = lbtn.dataset.leader;
-        match.winner = null; match.halved = false; match.margin = '';
-        card.querySelectorAll('.qr-leader button').forEach(b=>b.classList.remove('active'));
-        lbtn.classList.add('active');
-        card.querySelectorAll('.qr-state button').forEach(b=>b.classList.toggle('active', b.dataset.qstate==='live'));
-        card.querySelectorAll('.win-btn').forEach(b=>b.classList.remove('active'));
-        card.querySelector('.margin-grp').classList.remove('show');
-        card.querySelector('.live-controls').classList.add('show');
-      };
-    });
-
-    card.querySelectorAll('.win-btn').forEach(wbtn=>{
-      wbtn.onclick = ()=>{
-        match.status = 'final';
-        if(wbtn.dataset.result==='HALVED'){ match.halved = true; match.winner = null; }
-        else { match.halved = false; match.winner = wbtn.dataset.result; }
-        card.querySelectorAll('.win-btn').forEach(b=>b.classList.remove('active'));
-        wbtn.classList.add('active');
-        card.querySelectorAll('.qr-state button, .qr-leader button').forEach(b=>b.classList.remove('active'));
-        card.querySelector('.live-controls').classList.remove('show');
-        card.querySelector('.margin-grp').classList.toggle('show', !match.halved);
-      };
-    });
 
     card.querySelectorAll('.names-col input[type=text]').forEach(inp=>{
       inp.oninput = ()=>{
@@ -1065,8 +976,11 @@ card.querySelectorAll('.hs-minus, .hs-plus').forEach(btn=>{
         const side = btn.dataset.hside;
         const arr = side==='A' ? match.holeScoresA : match.holeScoresB;
         let cur = parseInt(arr[idx]);
-        if(isNaN(cur)) cur = state.course.holes[idx].par;
-        cur = btn.classList.contains('hs-plus') ? Math.min(12, cur+1) : Math.max(1, cur-1);
+        if(isNaN(cur)){
+          cur = state.course.holes[idx].par; // first tap just fills in par, doesn't add/subtract yet
+        } else {
+          cur = btn.classList.contains('hs-plus') ? Math.min(12, cur+1) : Math.max(1, cur-1);
+        }
         arr[idx] = cur;
         card.querySelector(`.val[data-valdisp="${side}"]`).textContent = cur;
       };
@@ -1082,8 +996,8 @@ card.querySelectorAll('.hs-minus, .hs-plus').forEach(btn=>{
     const saveHoleBtn = card.querySelector('[data-action=savehole]');
     if(saveHoleBtn) saveHoleBtn.onclick = async ()=>{
       const idx = getStepperIdx(match);
-      if(match.holeScoresA[idx]==='' || match.holeScoresA[idx]==null) match.holeScoresA[idx] = state.course.holes[idx].par;
-      if(match.holeScoresB[idx]==='' || match.holeScoresB[idx]==null) match.holeScoresB[idx] = state.course.holes[idx].par;
+      if(match.holeScoresA[idx]==='' || match.holeScoresA[idx]==null) match.holeScoresA[idx] = 'PU';
+      if(match.holeScoresB[idx]==='' || match.holeScoresB[idx]==null) match.holeScoresB[idx] = 'PU';
       computeFromHoles(match, state.course);
       saveHoleBtn.textContent = 'Saving…';
       await loadStateMergeOne(session.id, match);
@@ -1092,15 +1006,6 @@ card.querySelectorAll('.hs-minus, .hs-plus').forEach(btn=>{
       if(currentView==='board') renderBoard();
       if(currentView==='mvp') renderMVP();
     };
-
-    card.querySelectorAll('.live-controls input[data-field], .margin-grp input[data-field]').forEach(inp=>{
-      inp.oninput = ()=>{
-        const f = inp.dataset.field;
-        if(f==='up'){ match.up = parseInt(inp.value)||1; }
-        else if(f==='thru'){ match.thru = parseInt(inp.value)||1; }
-        else if(f==='margin'){ match.margin = inp.value; }
-      };
-    });
 
     card.querySelector('[data-action=save]').onclick = async ()=>{
       const saveBtn = card.querySelector('[data-action=save]');
