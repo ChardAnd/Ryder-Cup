@@ -988,16 +988,19 @@ let mtCls = 'mt-status';
     const mid = card.dataset.mid;
     const match = session.matches.find(mm=>mm.id===mid);
 
-    card.querySelectorAll('.qr-state button').forEach(sbtn=>{
-      sbtn.onclick = ()=>{
-        match.status = sbtn.dataset.qstate;
-        match.winner = null; match.halved = false; match.margin = '';
-        if(match.status==='live' && !match.leader) match.leader = 'AS';
-        card.querySelectorAll('.qr-state button').forEach(b=>b.classList.remove('active'));
-        sbtn.classList.add('active');
-        card.querySelectorAll('.win-btn').forEach(b=>b.classList.remove('active'));
-        card.querySelector('.margin-grp').classList.remove('show');
-        card.querySelector('.live-controls').classList.toggle('show', match.status==='live');
+card.querySelectorAll('.hs-minus, .hs-plus').forEach(btn=>{
+      btn.onclick = ()=>{
+        const idx = getStepperIdx(match);
+        const side = btn.dataset.hside;
+        const arr = side==='A' ? match.holeScoresA : match.holeScoresB;
+        let cur = parseInt(arr[idx]);
+        if(isNaN(cur)){
+          cur = state.course.holes[idx].par; // first tap just fills in par, doesn't add/subtract yet
+        } else {
+          cur = btn.classList.contains('hs-plus') ? Math.min(12, cur+1) : Math.max(1, cur-1);
+        }
+        arr[idx] = cur;
+        card.querySelector(`.val[data-valdisp="${side}"]`).textContent = cur;
       };
     });
 
