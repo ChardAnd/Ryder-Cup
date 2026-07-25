@@ -406,6 +406,14 @@ button{font-family:inherit;}
 .note{font-size:12px; color:var(--ink-dim); line-height:1.5; margin-top:4px;}
 .footer-note{text-align:center; color:var(--ink-dim); font-size:11px; padding:20px 18px 0; letter-spacing:.03em;}
 
+.pin-gate{max-width:320px; margin:40px auto; text-align:center; padding:28px 24px; background:var(--panel); border:1px solid var(--line); border-radius:14px;}
+.pin-gate h3{margin:0 0 8px; font-size:18px;}
+.pin-gate input{
+  width:100%; text-align:center; font-size:22px; letter-spacing:6px; padding:12px;
+  border:1px solid var(--line-strong); border-radius:8px; margin:14px 0 10px; font-family:'IBM Plex Mono',monospace;
+  color:var(--ink); background:#fff;
+}
+
 /* ---------- MVP view ---------- */
 .mvp-empty{text-align:center; padding:40px 20px; color:var(--ink-dim); font-size:14px; line-height:1.6;}
 .mvp-row{
@@ -468,6 +476,16 @@ const firebaseConfig = {
 };
 firebase.initializeApp(firebaseConfig);
 const dbRef = firebase.database().ref('ryder-event-v1');
+// ====================================================================
+
+// ====================================================================
+// Change this PIN and share it only with your scorers. Anyone who knows it
+// can update scores; the Board and MVP pages stay open to everyone else.
+// This is a simple deterrent, not strong security — it lives in this file's
+// own source code, so it's not meant to stop a determined technical person,
+// just casual visitors clicking around.
+// ====================================================================
+const SCORER_PIN = '1234';
 // ====================================================================
 
 const STORE_KEY = 'ryder-event-v1';
@@ -790,7 +808,7 @@ function renderBoard(){
         <div class="idx">${idx+1}</div>
         <div class="side a">${displayNamesHtml(m.playersA, idx)}</div>
         <div class="${pillCls}">${matchStatusText(m)}</div>
-        <div class="side a">${displayNamesHtml(m.playersB, idx)}</div>
+        <div class="side b">${displayNamesHtml(m.playersB, idx)}</div>
       </div>`;
     });
     html += `</div>`;
@@ -803,6 +821,31 @@ function renderBoard(){
 /* ---------------- UPDATE VIEW ---------------- */
 function renderUpdate(){
   const el = document.getElementById('view-update');
+
+  if(localStorage.getItem('scorerPinOk') !== 'yes'){
+    el.innerHTML = `<div class="pin-gate">
+      <h3>Scorer access</h3>
+      <p class="note">Enter the scorer PIN to update matches. Ask your event organiser if you don't have it.</p>
+      <input type="password" inputmode="numeric" id="pinInput" placeholder="PIN">
+      <button class="apply-btn" id="pinSubmit" type="button">Enter</button>
+      <p class="note" id="pinError" style="color:#9A3A2C; display:none;">Incorrect PIN — try again.</p>
+    </div>`;
+    const tryPin = ()=>{
+      const val = document.getElementById('pinInput').value;
+      if(val === SCORER_PIN){
+        localStorage.setItem('scorerPinOk', 'yes');
+        renderUpdate();
+      } else {
+        document.getElementById('pinError').style.display = 'block';
+      }
+    };
+    document.getElementById('pinSubmit').onclick = tryPin;
+    document.getElementById('pinInput').addEventListener('keydown', e=>{
+      if(e.key==='Enter') tryPin();
+    });
+    return;
+  }
+
   if(!updateSessionId) updateSessionId = state.sessions[0].id;
   let html = `<div class="picker-row">`;
   state.sessions.forEach(s=>{
@@ -827,8 +870,8 @@ function renderUpdate(){
       html += `<button class="match-tile" data-select="${m.id}" type="button">
         <div class="mt-num">${idx+1}</div>
         <div class="mt-names">
-         <div class="a">${displayNamesHtml(m.playersA, idx)}</div>
-          <div class="a">${displayNamesHtml(m.playersB, idx)}</div>
+          <div class="a">${displayNamesHtml(m.playersA, idx)}</div>
+          <div class="b">${displayNamesHtml(m.playersB, idx)}</div>
         </div>
         <div class="${mtCls}">${matchStatusText(m)}</div>
       </button>`;
