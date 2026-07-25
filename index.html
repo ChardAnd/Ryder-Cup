@@ -676,7 +676,8 @@ function renderTallyBar(t){
   const wonB = allMatches.filter(m=> m.status==='final' && !m.halved && m.winner==='B');
 
   const ordered = [...wonA, ...leaningA, ...halved, ...neutral, ...leaningB, ...wonB];
-  const dividerPct = allMatches.length ? ((wonA.length + halved.length) / allMatches.length * 100) : 50;
+  const leftDividerPct = allMatches.length ? ((wonA.length + halved.length) / allMatches.length * 100) : 50;
+  const rightDividerPct = allMatches.length ? (100 - (wonB.length / allMatches.length * 100)) : 50;
 
   let segHtml = '';
   ordered.forEach(m=>{
@@ -690,7 +691,8 @@ function renderTallyBar(t){
     <div class="tally-meta">${t.decided}/${t.total} matches complete</div>
     <div class="tally-bar">
       <div class="tally-segments">${segHtml}</div>
-      <div class="tally-divider" style="left:${dividerPct}%;"></div>
+      <div class="tally-divider" style="left:${leftDividerPct}%;"></div>
+      <div class="tally-divider" style="left:${rightDividerPct}%;"></div>
       <div class="tally-num left">${fmtPts(t.a)}</div>
       <div class="tally-num right">${fmtPts(t.b)}</div>
     </div>
