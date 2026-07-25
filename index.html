@@ -666,6 +666,37 @@ function renderTallyBar(t){
   state.sessions.forEach(s=> s.matches.forEach(m=> allMatches.push(m)));
 
   const wonA = allMatches.filter(m=> m.status==='final' && !m.halved && m.winner==='A');
+  const leaningA = allMatches.filter(m=> m.status==='live' && m.leader==='A');
+  const halved = allMatches.filter(m=> m.status==='final' && m.halved);
+  const neutral = allMatches.filter(m=> m.status==='pending' || (m.status==='live' && m.leader==='AS'));
+  const leaningB = allMatches.filter(m=> m.status==='live' && m.leader==='B');
+  const wonB = allMatches.filter(m=> m.status==='final' && !m.halved && m.winner==='B');
+
+  const ordered = [...wonA, ...leaningA, ...halved, ...neutral, ...leaningB, ...wonB];
+  const dividerPct = allMatches.length ? ((wonA.length + halved.length) / allMatches.length * 100) : 50;
+
+  let segHtml = '';
+  ordered.forEach(m=>{
+    let cls = 'pending';
+    if(m.status==='live') cls = m.leader==='A' ? 'live-a' : (m.leader==='B' ? 'live-b' : 'live-as');
+    if(m.status==='final') cls = m.halved ? 'half' : (m.winner==='A' ? 'a' : 'b');
+    segHtml += `<div class="tseg ${cls}" title="${escapeHtml(matchStatusText(m))}"></div>`;
+  });
+
+  return `<div class="tally-wrap">
+    <div class="tally-meta">${t.decided}/${t.total} matches complete</div>
+    <div class="tally-bar">
+      <div class="tally-segments">${segHtml}</div>
+      <div class="tally-divider" style="left:${dividerPct}%;"></div>
+      <div class="tally-num left">${fmtPts(t.a)}</div>
+      <div class="tally-num right">${fmtPts(t.b)}</div>
+    </div>
+  </div>`;
+}function renderTallyBar(t){
+  const allMatches = [];
+  state.sessions.forEach(s=> s.matches.forEach(m=> allMatches.push(m)));
+
+  const wonA = allMatches.filter(m=> m.status==='final' && !m.halved && m.winner==='A');
   const halved = allMatches.filter(m=> m.status==='final' && m.halved);
   const pending = allMatches.filter(m=> m.status!=='final');
   const wonB = allMatches.filter(m=> m.status==='final' && !m.halved && m.winner==='B');
