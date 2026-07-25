@@ -234,6 +234,14 @@ button{font-family:inherit;}
   flex-shrink:0; font-family:'IBM Plex Mono',monospace; font-size:10.5px; font-weight:700; color:var(--ink-dim);
   padding:5px 9px; border-radius:14px; background:#fff; border:1px solid var(--line-strong);
 }
+.match-tile .mt-status.decided{border:none;}
+.match-tile .mt-status.decided.a{background:var(--color-a); color:#fff;}
+.match-tile .mt-status.decided.b{background:var(--color-b); color:#fff;}
+.match-tile .mt-status.decided.half{background:var(--gold); color:#fff;}
+.match-tile .mt-status.live-a{color:var(--color-a); border-color:var(--color-a); background:rgba(42,66,112,0.08);}
+.match-tile .mt-status.live-b{color:var(--color-b); border-color:var(--color-b); background:rgba(154,58,44,0.08);}
+.match-tile .mt-status.live-as{color:var(--neutral); border-color:var(--neutral); background:rgba(139,150,134,0.12);}
+}
 .back-to-matches{
   display:inline-flex; align-items:center; gap:6px; background:none; border:none; color:var(--sage-dark);
   font-weight:700; font-size:13px; cursor:pointer; padding:8px 0 14px; font-family:inherit;
