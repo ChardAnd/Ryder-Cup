@@ -183,9 +183,10 @@ button{font-family:inherit;}
 .session-head h3{margin:0; font-size:19px; font-weight:700; color:var(--ink);}
 .session-head span{font-size:12px; color:var(--ink-dim); text-transform:uppercase; letter-spacing:.06em;}
 .match-row{
-  display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:10px;
+  display:flex; flex-direction:column; gap:2px; padding:10px 12px; border-radius:10px;
   background:var(--panel); border:1px solid var(--line); margin-bottom:8px;
 }
+.match-row .mr-row{display:flex; align-items:center; gap:10px; width:100%;}
 .match-row .idx{
   flex-shrink:0; width:22px; height:22px; border-radius:50%; background:rgba(192,138,46,0.14);
   color:var(--gold); font-family:'IBM Plex Mono',monospace; font-size:11px; font-weight:700;
@@ -217,10 +218,11 @@ button{font-family:inherit;}
 
 .match-tile-grid{display:flex; flex-direction:column; gap:10px;}
 .match-tile{
-  display:flex; align-items:center; gap:12px; padding:14px; border-radius:12px;
+  display:flex; flex-direction:column; gap:2px; padding:14px; border-radius:12px;
   background:var(--panel); border:1px solid var(--line); cursor:pointer; text-align:left; width:100%;
   font-family:inherit;
 }
+.match-tile .mt-row{display:flex; align-items:center; gap:12px; width:100%;}
 .match-tile:hover{border-color:var(--sage);}
 .match-tile .mt-num{
   width:32px; height:32px; border-radius:50%; background:var(--gold); color:#fff; font-family:'IBM Plex Mono',monospace;
@@ -241,6 +243,11 @@ button{font-family:inherit;}
 .match-tile .mt-status.live-a{color:var(--color-a); background:rgba(42,66,112,0.14); border:none; padding-left:16px; clip-path:polygon(22% 0, 100% 0, 100% 100%, 22% 100%, 0 50%);}
 .match-tile .mt-status.live-b{color:var(--color-b); background:rgba(154,58,44,0.14); border:none; padding-right:16px; clip-path:polygon(0 0, 78% 0, 100% 50%, 78% 100%, 0 100%);}
 .match-tile .mt-status.live-as{color:var(--neutral); border-color:var(--neutral); background:rgba(139,150,134,0.12);}
+@keyframes pulseText{0%,100%{opacity:1;} 50%{opacity:.35;}}
+.in-play-tag{
+  text-align:center; font-size:10px; font-weight:700; letter-spacing:.1em; text-transform:uppercase;
+  color:#E15C4E; margin-top:2px; animation:pulseText 2.6s ease-in-out infinite;
+}
 .back-to-matches{
   display:inline-flex; align-items:center; gap:6px; background:none; border:none; color:var(--sage-dark);
   font-weight:700; font-size:13px; cursor:pointer; padding:8px 0 14px; font-family:inherit;
@@ -485,7 +492,7 @@ const dbRef = firebase.database().ref('ryder-event-v1');
 // own source code, so it's not meant to stop a determined technical person,
 // just casual visitors clicking around.
 // ====================================================================
-const SCORER_PIN = '1893';
+const SCORER_PIN = '1234';
 // ====================================================================
 
 const STORE_KEY = 'ryder-event-v1';
@@ -670,7 +677,7 @@ function computeFromHoles(m, course){
     }
   } else {
     m.status='live';
-    m.leader = up>0 ? 'A' : (up<0 ? 'B' : 'A/S');
+    m.leader = up>0 ? 'A' : (up<0 ? 'B' : 'AS');
     m.up = Math.abs(up) || 1;
     m.thru = holesPlayed;
   }
@@ -678,7 +685,7 @@ function computeFromHoles(m, course){
 
 function matchStatusText(m){
   if(m.status==='final'){
-    if(m.halved) return 'A/S';
+    if(m.halved) return 'HALVED';
     return (m.margin ? m.margin.toUpperCase() : 'WIN');
   }
   if(m.status==='live'){
@@ -712,7 +719,7 @@ function renderTallyBar(t){
   const wonA = allMatches.filter(m=> m.status==='final' && !m.halved && m.winner==='A');
   const leaningA = allMatches.filter(m=> m.status==='live' && m.leader==='A');
   const halved = allMatches.filter(m=> m.status==='final' && m.halved);
-  const neutral = allMatches.filter(m=> m.status==='pending' || (m.status==='live' && m.leader==='A/S'));
+  const neutral = allMatches.filter(m=> m.status==='pending' || (m.status==='live' && m.leader==='AS'));
   const leaningB = allMatches.filter(m=> m.status==='live' && m.leader==='B');
   const wonB = allMatches.filter(m=> m.status==='final' && !m.halved && m.winner==='B');
 
@@ -805,10 +812,13 @@ function renderBoard(){
       if(m.status==='live') pillCls += ' ' + (m.leader==='A' ? 'live-a' : (m.leader==='B' ? 'live-b' : 'live-as'));
       if(m.status==='final') pillCls += ' decided ' + (m.halved ? 'half' : (m.winner==='A'?'a':'b'));
       html += `<div class="match-row">
-        <div class="idx">${idx+1}</div>
-        <div class="side a">${displayNamesHtml(m.playersA, idx)}</div>
-        <div class="${pillCls}">${matchStatusText(m)}</div>
-        <div class="side b">${displayNamesHtml(m.playersB, idx)}</div>
+        <div class="mr-row">
+          <div class="idx">${idx+1}</div>
+          <div class="side a">${displayNamesHtml(m.playersA, idx)}</div>
+          <div class="${pillCls}">${matchStatusText(m)}</div>
+          <div class="side b">${displayNamesHtml(m.playersB, idx)}</div>
+        </div>
+        ${m.status==='live' ? '<div class="in-play-tag">● In play</div>' : ''}
       </div>`;
     });
     html += `</div>`;
@@ -868,12 +878,15 @@ function renderUpdate(){
       if(m.status==='live') mtCls += ' ' + (m.leader==='A' ? 'live-a' : (m.leader==='B' ? 'live-b' : 'live-as'));
       if(m.status==='final') mtCls += ' decided ' + (m.halved ? 'half' : (m.winner==='A'?'a':'b'));
       html += `<button class="match-tile" data-select="${m.id}" type="button">
-        <div class="mt-num">${idx+1}</div>
-        <div class="mt-names">
-          <div class="a">${displayNamesHtml(m.playersA, idx)}</div>
-          <div class="b">${displayNamesHtml(m.playersB, idx)}</div>
+        <div class="mt-row">
+          <div class="mt-num">${idx+1}</div>
+          <div class="mt-names">
+            <div class="a">${displayNamesHtml(m.playersA, idx)}</div>
+            <div class="b">${displayNamesHtml(m.playersB, idx)}</div>
+          </div>
+          <div class="${mtCls}">${matchStatusText(m)}</div>
         </div>
-        <div class="${mtCls}">${matchStatusText(m)}</div>
+        ${m.status==='live' ? '<div class="in-play-tag">● In play</div>' : ''}
       </button>`;
     });
     html += `</div>`;
