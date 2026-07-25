@@ -109,6 +109,8 @@ button{font-family:inherit;}
 .tseg.a{background:var(--color-a);}
 .tseg.b{background:var(--color-b);}
 .tseg.half{background:var(--gold);}
+.tseg.half-a{flex:0.5; background:var(--color-a);}
+.tseg.half-b{flex:0.5; background:var(--color-b);}
 .tseg.pending{background:var(--panel);}
 .tseg.live-a{background:var(--color-a); opacity:.55; animation:pulseA 2.2s ease-in-out infinite;}
 .tseg.live-b{background:var(--color-b); opacity:.55; animation:pulseB 2.2s ease-in-out infinite;}
@@ -675,15 +677,15 @@ function renderTallyBar(t){
   const leaningB = allMatches.filter(m=> m.status==='live' && m.leader==='B');
   const wonB = allMatches.filter(m=> m.status==='final' && !m.halved && m.winner==='B');
 
-  const ordered = [...wonA, ...leaningA, ...halved, ...neutral, ...leaningB, ...wonB];
-
+  const seg = (cls, m) => `<div class="tseg ${cls}" title="${escapeHtml(matchStatusText(m))}"></div>`;
   let segHtml = '';
-  ordered.forEach(m=>{
-    let cls = 'pending';
-    if(m.status==='live') cls = m.leader==='A' ? 'live-a' : (m.leader==='B' ? 'live-b' : 'live-as');
-    if(m.status==='final') cls = m.halved ? 'half' : (m.winner==='A' ? 'a' : 'b');
-    segHtml += `<div class="tseg ${cls}" title="${escapeHtml(matchStatusText(m))}"></div>`;
-  });
+  wonA.forEach(m=> segHtml += seg('a', m));
+  leaningA.forEach(m=> segHtml += seg('live-a', m));
+  halved.forEach(m=> segHtml += seg('half-a', m)); // each halved match's A-half sits by team A
+  neutral.forEach(m=> segHtml += seg('pending', m));
+  halved.forEach(m=> segHtml += seg('half-b', m)); // and its B-half sits by team B
+  leaningB.forEach(m=> segHtml += seg('live-b', m));
+  wonB.forEach(m=> segHtml += seg('b', m));
 
   return `<div class="tally-wrap">
     <div class="tally-meta">${t.decided}/${t.total} matches complete</div>
