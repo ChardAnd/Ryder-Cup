@@ -79,6 +79,10 @@ button{font-family:inherit;}
   font-family:'IBM Plex Mono', monospace; font-size:clamp(48px,14vw,84px);
   font-weight:700; line-height:1; margin-top:2px;
 }
+.team-block .team-req{
+  font-family:'IBM Plex Mono',monospace; font-size:12px; font-weight:700; color:var(--gold);
+  margin-top:4px; letter-spacing:.02em;
+}
 .vs-mid{
   display:flex; flex-direction:column; align-items:center; justify-content:center;
   color:var(--ink-dim); min-width:70px;
@@ -553,9 +557,7 @@ function defaultState(){
     id:t.id, label:t.label, sub:t.sub, type:t.type, count:t.count,
     matches: buildMatches(t.id, t.count, [], t.type)
   }));
-  const total = sessions.reduce((sum,s)=> sum+s.count, 0);
-  const winMarker = Math.floor(total/2)+0.5;
-  return { title:'Cup Live', teamA:'USA', teamB:'Europe', colorA:COLOR_SWATCHES[0], colorB:COLOR_SWATCHES[1], course:defaultCourse(), winMarker, sessions };
+  return { title:'Cup Live', teamA:'USA', teamB:'Europe', colorA:COLOR_SWATCHES[0], colorB:COLOR_SWATCHES[1], course:defaultCourse(), defendingTeam:null, sessions };
 }
 
 function applyColors(){
@@ -579,10 +581,8 @@ async function loadState(){
   if(!state.colorA) state.colorA = COLOR_SWATCHES[0];
   if(!state.colorB) state.colorB = COLOR_SWATCHES[1];
   if(!state.course || !Array.isArray(state.course.holes) || state.course.holes.length!==18) state.course = defaultCourse();
-  if(typeof state.winMarker !== 'number'){
-    const total = state.sessions.reduce((sum,s)=> sum+s.count, 0);
-    state.winMarker = Math.floor(total/2)+0.5;
-  }
+  if(state.defendingTeam !== 'A' && state.defendingTeam !== 'B') state.defendingTeam = null;
+  delete state.winMarker;
   state.sessions.forEach(s=>{ s.matches = s.matches.map(m=>shapeMatch(m, s.type)); });
   applyColors();
 }
@@ -703,13 +703,13 @@ function renderTallyBar(t){
   halved.forEach(m=> segHtml += seg('half-b', m));        // half-point next
   wonB.forEach(m=> segHtml += seg('b', m));               // full win sits at the edge, by B's number
 
-  const markerPct = t.total ? Math.min(100, Math.max(0, (state.winMarker / t.total) * 100)) : 50;
+  const markerPct = t.total ? Math.min(100, Math.max(0, (t.threshold / t.total) * 100)) : 50;
 
   return `<div class="tally-wrap">
     <div class="tally-meta">${t.decided}/${t.total} matches complete</div>
     <div class="tally-bar">
       <div class="tally-segments">${segHtml}</div>
-      <div class="tally-marker" style="left:${markerPct}%;" title="${fmtPts(state.winMarker)} to win/retain"></div>
+      <div class="tally-marker" style="left:${markerPct}%;" title="${fmtPts(t.threshold)} to win outright"></div>
       <div class="tally-num left">${fmtPts(t.a)}</div>
       <div class="tally-num right">${fmtPts(t.b)}</div>
 
@@ -722,13 +722,19 @@ function renderBoard(){
   const t = computeTotals();
   const aName = state.teamA || 'Team A';
   const bName = state.teamB || 'Team B';
-  const aWon = t.a >= t.threshold;
-  const bWon = t.b >= t.threshold;
+  const retainThreshold = t.threshold - 0.5;
+  const aNeeds = state.defendingTeam === 'A' ? retainThreshold : t.threshold;
+  const bNeeds = state.defendingTeam === 'B' ? retainThreshold : t.threshold;
+  const aLabel = state.defendingTeam === 'A' ? 'to retain' : 'to win';
+  const bLabel = state.defendingTeam === 'B' ? 'to retain' : 'to win';
+  const aWon = t.a >= aNeeds;
+  const bWon = t.b >= bNeeds;
 
   let html = '';
   if(aWon || bWon){
     const winner = aWon ? aName : bName;
-    html += `<div class="clinched-banner">${escapeHtml(winner)} retain / win the Cup</div>`;
+    const verb = (aWon && state.defendingTeam==='A') || (bWon && state.defendingTeam==='B') ? 'retain' : 'win';
+    html += `<div class="clinched-banner">${escapeHtml(winner)} ${verb} the Cup</div>`;
   }
 
   html += `
@@ -736,15 +742,15 @@ function renderBoard(){
     <div class="team-block a">
       <div class="tname">${escapeHtml(aName)}</div>
       <div class="tpoints">${fmtPts(t.a)}</div>
+      <div class="team-req">${fmtPts(aNeeds)} ${aLabel}</div>
     </div>
     <div class="vs-mid">
       <div class="label">of ${t.total}</div>
-      <div class="label" style="margin-top:8px;">to win</div>
-      <div class="need">${fmtPts(t.threshold)}</div>
     </div>
     <div class="team-block b">
       <div class="tname">${escapeHtml(bName)}</div>
       <div class="tpoints">${fmtPts(t.b)}</div>
+      <div class="team-req">${fmtPts(bNeeds)} ${bLabel}</div>
     </div>
   </div>`;
 
@@ -1120,7 +1126,7 @@ async function loadStateMergeOne(sessionId, editedMatch){
   }
   fresh.title = state.title; fresh.teamA = state.teamA; fresh.teamB = state.teamB;
   fresh.colorA = state.colorA; fresh.colorB = state.colorB; fresh.course = state.course;
-  fresh.winMarker = state.winMarker;
+  fresh.defendingTeam = state.defendingTeam;
   state = fresh;
   state.sessions.forEach(ss=>{ ss.matches = ss.matches.map(m=>shapeMatch(m, ss.type)); });
   await saveState();
@@ -1234,7 +1240,7 @@ function renderSetup(){
   </div>
   <div class="setup-card">
     <h3>Session sizes</h3>
-    <div class="note" style="margin-bottom:10px;">Set how many matches are being played in each session. Reducing a count trims matches from the end; increasing adds blank ones. The win/retain marker below doesn't move automatically when you change these — adjust it separately if needed.</div>`;
+    <div class="note" style="margin-bottom:10px;">Set how many matches are being played in each session. Reducing a count trims matches from the end; increasing adds blank ones. The win/retain numbers recalculate automatically from this total.</div>`;
   state.sessions.forEach(s=>{
     html += `<div class="setup-row">
       <label>${escapeHtml(s.label)} — ${escapeHtml(s.sub)}</label>
@@ -1243,11 +1249,12 @@ function renderSetup(){
   });
   html += `</div>
   <div class="setup-card">
-    <h3>Win / retain marker</h3>
-    <div class="note" style="margin-bottom:10px;">The gold pin shown on the tally bar. Set it to the number of points needed to win outright — or, if one team is defending and only needs to tie, set it to that lower number instead.</div>
-    <div class="setup-row">
-      <label>Points needed</label>
-      <input type="number" min="0" max="100" step="0.5" value="${state.winMarker}" id="winMarkerInput">
+    <h3>Defending champion</h3>
+    <div class="note" style="margin-bottom:10px;">If a team is defending (won last time), they only need to tie to retain the trophy, while the challenger needs an outright majority. Choose who's defending, or "Neither" for a first event or a fresh trophy.</div>
+    <div class="seg" id="defendSeg">
+      <button data-defend="A" class="${state.defendingTeam==='A'?'active':''}">${escapeHtml(state.teamA)} defending</button>
+      <button data-defend="none" class="${!state.defendingTeam?'active':''}">Neither</button>
+      <button data-defend="B" class="${state.defendingTeam==='B'?'active':''}">${escapeHtml(state.teamB)} defending</button>
     </div>
   </div>
   <div class="setup-card">
@@ -1294,6 +1301,16 @@ function renderSetup(){
     renderBoard();
   };
 
+  document.getElementById('defendSeg').querySelectorAll('button').forEach(btn=>{
+    btn.onclick = async ()=>{
+      state.defendingTeam = btn.dataset.defend==='none' ? null : btn.dataset.defend;
+      document.getElementById('defendSeg').querySelectorAll('button').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      await saveState();
+      renderBoard();
+    };
+  });
+
   el.querySelectorAll('.hole-grid input[data-cfield]').forEach(inp=>{
     inp.oninput = ()=>{
       const hi = parseInt(inp.dataset.hole);
@@ -1305,8 +1322,6 @@ function renderSetup(){
   document.getElementById('applySetup').onclick = async ()=>{
     state.teamA = document.getElementById('teamAInput').value.trim() || 'Team A';
     state.teamB = document.getElementById('teamBInput').value.trim() || 'Team B';
-    const wm = parseFloat(document.getElementById('winMarkerInput').value);
-    if(!isNaN(wm)) state.winMarker = wm;
     el.querySelectorAll('input[data-sid]').forEach(inp=>{
       const sid = inp.dataset.sid;
       const newCount = Math.max(0, parseInt(inp.value)||0);
