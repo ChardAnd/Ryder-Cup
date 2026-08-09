@@ -949,7 +949,7 @@ function renderBoard(){
   html += `
   <div class="matchup">
     <div class="team-block a ${aWon ? 'celebrate' : ''}">
-      <div class="tname">${escapeHtml(aName)}${aWon ? '<span class="trophy">🏆</span>' : ''}</div>
+      <div class="tname">${escapeHtml(aName)}${aWon ? TROPHY_ICON : ''}</div>
       <div class="tpoints">${fmtPts(t.a)}</div>
       <div class="team-req">${fmtPts(aNeeds)} ${aLabel}</div>
     </div>
@@ -957,7 +957,7 @@ function renderBoard(){
       ${state.logoDataUrl ? `<img class="event-logo" src="${state.logoDataUrl}" alt="Event logo">` : ''}
     </div>
     <div class="team-block b ${bWon ? 'celebrate' : ''}">
-      <div class="tname">${escapeHtml(bName)}${bWon ? '<span class="trophy">🏆</span>' : ''}</div>
+      <div class="tname">${escapeHtml(bName)}${bWon ? TROPHY_ICON : ''}</div>
       <div class="tpoints">${fmtPts(t.b)}</div>
       <div class="team-req">${fmtPts(bNeeds)} ${bLabel}</div>
     </div>
