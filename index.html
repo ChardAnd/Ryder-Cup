@@ -89,7 +89,7 @@ button{font-family:inherit;}
   border-radius:20px; padding:8px 4px; margin:-8px -4px;
 }
 .team-block.celebrate .tpoints{color:var(--gold); animation:glowWin 2.2s ease-in-out infinite;}
-.team-block.celebrate .trophy{font-size:0.6em; margin-left:4px; display:inline-block; animation:glowWin 2.2s ease-in-out infinite;}
+@keyframes glowWinIcon{0%,100%{filter:drop-shadow(0 0 2px rgba(192,138,46,0.3));} 50%{filter:drop-shadow(0 0 7px rgba(192,138,46,0.9));}} .team-block.celebrate .trophy-icon{   color:var(--gold); width:0.56em; height:0.56em; margin-left:6px; vertical-align:middle;   animation:glowWinIcon 2.2s ease-in-out infinite; }
 .vs-mid{
   display:flex; flex-direction:column; align-items:center; justify-content:center;
   color:var(--ink-dim); min-width:100px;
