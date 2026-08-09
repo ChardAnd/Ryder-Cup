@@ -1031,12 +1031,12 @@ function renderUpdate(){
     el.innerHTML = `<div class="pin-gate">
       <h3>Scorer access</h3>
       <p class="note">Enter the scorer PIN to update matches. Ask your event organiser if you don't have it.</p>
-      <input type="password" inputmode="numeric" id="pinInput" placeholder="PIN">
+      <input type="tel" inputmode="numeric" autocomplete="off" id="pinInput" placeholder="PIN">
       <button class="apply-btn" id="pinSubmit" type="button">Enter</button>
       <p class="note" id="pinError" style="color:#9A3A2C; display:none;">Incorrect PIN — try again.</p>
     </div>`;
     const tryPin = ()=>{
-      const val = document.getElementById('pinInput').value;
+      const val = document.getElementById('pinInput').value.trim();
       if(val === SCORER_PIN){
         localStorage.setItem('scorerPinOk', 'yes');
         renderUpdate();
@@ -1462,12 +1462,12 @@ function renderSetup(){
     el.innerHTML = `<div class="pin-gate">
       <h3>Setup access</h3>
       <p class="note">Enter the setup PIN to change setup. This is separate from the scorer PIN — ask your event organiser if you don't have it.</p>
-      <input type="password" inputmode="numeric" id="setupPinInput" placeholder="PIN">
+      <input type="tel" inputmode="numeric" autocomplete="off" id="setupPinInput" placeholder="PIN">
       <button class="apply-btn" id="setupPinSubmit" type="button">Enter</button>
       <p class="note" id="setupPinError" style="color:#9A3A2C; display:none;">Incorrect PIN — try again.</p>
     </div>`;
     const trySetupPin = ()=>{
-      const val = document.getElementById('setupPinInput').value;
+      const val = document.getElementById('setupPinInput').value.trim();
       if(val === SETUP_PIN){
         localStorage.setItem('setupPinOk', 'yes');
         renderSetup();
