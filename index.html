@@ -528,7 +528,7 @@ const SETUP_PIN = '2004';
 const STORE_KEY = 'ryder-event-v1';
 const SESSION_TEMPLATE = [
   {id:'satam', label:'Saturday Morning', sub:'Fourball', type:'fourball', count:4},
-  {id:'satpm', label:'Saturday Afternoon', sub:'Foursomes', type:'foursomes', count:4},
+  {id:'satpm', label:'Saturday Afternoon', sub:'Greensomes', type:'greensomes', count:4},
   {id:'sunam', label:'Sunday Morning', sub:'Fourball', type:'fourball', count:4},
   {id:'sunpm', label:'Sunday Afternoon', sub:'Singles', type:'singles', count:12},
 ];
@@ -544,7 +544,7 @@ let expandedBoardMatches = new Set(); // matchIds currently showing their tally 
 function emptyHoles(){ return new Array(18).fill(''); }
 
 // True if this match's hole scores are stored per-player (fourball) rather than
-// one combined value per side (singles/foursomes).
+// one combined value per side (singles/greensomes).
 function isFourballMatch(m){ return Array.isArray(m.holeScoresA) && Array.isArray(m.holeScoresA[0]); }
 
 function matchHasHoleData(m){
@@ -697,7 +697,7 @@ function fmtPts(n){
 // Given gross scores per hole and strokes given, work out who's winning and by how much,
 // using the course's stroke index to decide which holes carry a handicap stroke.
 // Fourball matches store scores/strokes per player and use best-ball (lowest net of
-// the two partners counts for the side); singles/foursomes use one combined ball per side.
+// the two partners counts for the side); singles/greensomes use one combined ball per side.
 function computeFromHoles(m, course){
   const holes = (course && course.holes && course.holes.length===18) ? course.holes : defaultCourse().holes;
   const fourball = isFourballMatch(m);
