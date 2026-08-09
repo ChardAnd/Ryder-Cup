@@ -518,12 +518,14 @@ button{font-family:inherit;}
   width:50px; flex-shrink:0;
 }
 .history-result{
-  flex:1; display:flex; align-items:baseline; justify-content:center; gap:9px; flex-wrap:wrap;
+  flex:1; display:grid; grid-template-columns:1fr 34px 18px 34px 1fr; align-items:baseline; gap:8px;
   font-family:'IBM Plex Mono',monospace; font-size:14px;
 }
-.history-result .hr-winner{font-weight:800; font-size:15.5px;}
-.history-result .hr-loser{color:var(--ink-dim); font-weight:500;}
-.history-result .hr-dash{color:var(--ink-dim); font-weight:500;}
+.history-result .hr-winner{text-align:right; font-weight:800; font-size:15.5px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+.history-result .hr-wscore{text-align:right;}
+.history-result .hr-lscore{text-align:left;}
+.history-result .hr-loser{text-align:left; color:var(--ink-dim); font-weight:500; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+.history-result .hr-dash{text-align:center; color:var(--ink-dim); font-weight:500;}
 </style>
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-database-compat.js"></script>
@@ -1532,9 +1534,10 @@ function renderHistory(){
       <div class="history-year">${r.year}</div>
       <div class="history-result">
         <span class="hr-winner" style="${wc?`color:${wc}`:''}">${escapeHtml(r.winner)}</span>
-        <span>${fmtPts(r.winnerScore)}</span>
+        <span class="hr-wscore">${fmtPts(r.winnerScore)}</span>
         <span class="hr-dash">–</span>
-        <span class="hr-loser">${fmtPts(r.loserScore)} ${escapeHtml(r.loser)}</span>
+        <span class="hr-lscore">${fmtPts(r.loserScore)}</span>
+        <span class="hr-loser">${escapeHtml(r.loser)}</span>
       </div>
     </div>`;
   });
