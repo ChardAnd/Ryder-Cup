@@ -943,7 +943,7 @@ function renderBoard(){
   if(aWon || bWon){
     const winner = aWon ? aName : bName;
     const verb = (aWon && state.defendingTeam==='A') || (bWon && state.defendingTeam==='B') ? 'retain' : 'win';
-    html += `<div class="clinched-banner">${escapeHtml(winner)} ${verb} the Cup</div>`;
+    html += `<div class="clinched-banner">${escapeHtml(winner)} ${verb} the Ryder Cup</div>`;
   }
 
   html += `
