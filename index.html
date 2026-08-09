@@ -60,6 +60,14 @@ button{font-family:inherit;}
   letter-spacing:.04em; text-transform:uppercase; cursor:pointer; transition:all .15s; white-space:nowrap;
 }
 .nav button.active{background:#fff; color:var(--sage-dark);}
+@media (max-width:700px){
+  .nav button[data-view="mvp"],
+  .nav button[data-view="history"],
+  .nav button[data-view="live"],
+  .nav button[data-view="setup"]{
+    display:none;
+  }
+}
 
 .view{padding:20px 18px 0;}
 .hidden{display:none !important;}
