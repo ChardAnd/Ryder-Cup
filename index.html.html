@@ -1,0 +1,2234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Cup Live</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700;9..144,900&family=IBM+Plex+Mono:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap');
+
+:root{
+  --bg:#FFFFFF;
+  --panel:#F3F6F0;
+  --line: rgba(20,35,15,0.10);
+  --line-strong: rgba(20,35,15,0.22);
+  --sage:#7C9A6E;
+  --sage-dark:#5F7A54;
+  --ink:#1B2419;
+  --ink-dim:#6A7A63;
+  --color-a:#2A4270;
+  --color-b:#9A3A2C;
+  --gold:#C08A2E;
+  --silver:#A9AEB3;
+  --neutral:#8B9686;
+  --ok:#5C8A6B;
+  font-family: 'IBM Plex Sans', sans-serif;
+}
+*{box-sizing:border-box; -webkit-tap-highlight-color: transparent;}
+html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);min-height:100%;}
+body{
+  background:var(--bg);
+}
+h1,h2,h3,.display{font-family:'Fraunces', serif;}
+.mono{font-family:'IBM Plex Mono', monospace;}
+button{font-family:inherit;}
+
+/* ---------- App shell ---------- */
+#app{max-width:960px;margin:0 auto;padding:0 0 60px;min-height:100vh;}
+
+.topbar{
+  display:flex; align-items:center; justify-content:space-between; gap:10px;
+  padding:14px 18px; position:sticky; top:0; z-index:20;
+  background:var(--sage);
+}
+.brand{display:flex; align-items:center; gap:10px; min-width:0;}
+.brand .dot{width:9px;height:9px;border-radius:50%;background:#fff; flex-shrink:0;}
+.brand .dot.live{background:#E15C4E; animation:pulse 1.8s ease-in-out infinite;}
+@keyframes pulse{0%,100%{opacity:1; box-shadow:0 0 0 0 rgba(225,92,78,0.5);} 50%{opacity:.6; box-shadow:0 0 0 6px rgba(225,92,78,0);}}
+@keyframes pulseA{0%,100%{opacity:1; box-shadow:0 0 0 0 var(--color-a);} 50%{opacity:.6; box-shadow:0 0 0 6px transparent;}}
+@keyframes pulseB{0%,100%{opacity:1; box-shadow:0 0 0 0 var(--color-b);} 50%{opacity:.6; box-shadow:0 0 0 6px transparent;}}
+@keyframes pulseNeutral{0%,100%{opacity:1; box-shadow:0 0 0 0 var(--neutral);} 50%{opacity:.6; box-shadow:0 0 0 6px transparent;}}
+.brand-title{
+  font-size:15px; letter-spacing:.12em; text-transform:uppercase; color:#fff; font-weight:600;
+  padding:2px 0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  min-width:60px; max-width:44vw;
+}
+.nav{display:flex; gap:4px; background:rgba(0,0,0,0.14); padding:4px; border-radius:10px; overflow-x:auto;}
+.nav button{
+  background:transparent;border:none;color:rgba(255,255,255,0.8);
+  padding:8px 12px;border-radius:7px;font-size:12px;font-weight:600;
+  letter-spacing:.04em; text-transform:uppercase; cursor:pointer; transition:all .15s; white-space:nowrap;
+}
+.nav button.active{background:#fff; color:var(--sage-dark);}
+@media (max-width:700px){
+  .nav button[data-view="mvp"],
+  .nav button[data-view="history"],
+  .nav button[data-view="live"],
+  .nav button[data-view="setup"]{
+    display:none;
+  }
+}
+
+.view{padding:20px 18px 0;}
+.hidden{display:none !important;}
+
+/* ---------- Board: header score ---------- */
+.matchup{
+  display:flex; align-items:stretch; justify-content:space-between; gap:16px;
+  margin-bottom:22px;
+}
+.team-block{flex:1; text-align:center;}
+.team-block .tname{
+  font-size:clamp(22px,5vw,34px); font-weight:700; letter-spacing:.02em;
+}
+.team-block.a .tname{color:var(--color-a);}
+.team-block.b .tname{color:var(--color-b);}
+.team-block .tpoints{
+  font-family:'IBM Plex Mono', monospace; font-size:clamp(48px,14vw,84px);
+  font-weight:700; line-height:1; margin-top:2px;
+}
+.team-block .team-req{
+  font-family:'IBM Plex Mono',monospace; font-size:12px; font-weight:700; color:var(--gold);
+  margin-top:4px; letter-spacing:.02em;
+}
+@keyframes glowWin{0%,100%{text-shadow:0 0 10px rgba(192,138,46,0.15);} 50%{text-shadow:0 0 26px rgba(192,138,46,0.75);}}
+.team-block.celebrate{
+  background:radial-gradient(circle, rgba(192,138,46,0.14) 0%, rgba(192,138,46,0) 72%);
+  border-radius:20px; padding:8px 4px; margin:-8px -4px;
+}
+.team-block.celebrate .tpoints{color:var(--gold); animation:glowWin 2.2s ease-in-out infinite;}
+@keyframes glowWinIcon{0%,100%{filter:drop-shadow(0 0 2px rgba(192,138,46,0.3));} 50%{filter:drop-shadow(0 0 7px rgba(192,138,46,0.9));}}
+.team-block.celebrate .trophy-icon{
+  color:var(--gold); width:0.56em; height:0.56em; margin-left:6px; vertical-align:middle;
+  animation:glowWinIcon 2.2s ease-in-out infinite;
+}
+.vs-mid{
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  color:var(--ink-dim); min-width:100px;
+}
+.vs-mid .label{font-size:10px; letter-spacing:.15em; text-transform:uppercase;}
+.vs-mid .need{font-family:'IBM Plex Mono',monospace; font-size:13px; margin-top:6px; color:var(--gold); text-align:center;}
+.vs-mid .event-logo{max-width:96px; max-height:96px; object-fit:contain; margin-bottom:8px; border-radius:8px;}
+.logo-setup-row{display:flex; align-items:center; gap:14px;}
+.logo-setup-row img{width:56px; height:56px; object-fit:contain; border-radius:8px; border:1px solid var(--line-strong); background:#fff; padding:4px;}
+.logo-setup-actions{display:flex; flex-direction:column; gap:8px; flex:1;}
+.logo-remove-btn{
+  background:none; border:1px solid rgba(154,58,44,0.4); color:#9A3A2C; padding:9px 12px;
+  border-radius:9px; font-size:12.5px; font-weight:700; cursor:pointer; font-family:inherit;
+}
+
+.clinched-banner{
+  text-align:center; padding:10px 16px; margin-bottom:18px; border-radius:10px;
+  font-family:'Fraunces',serif; font-weight:700; font-size:16px;
+  background:linear-gradient(90deg, rgba(192,138,46,0.10), rgba(192,138,46,0.20), rgba(192,138,46,0.10));
+  border:1px solid var(--gold); color:var(--gold);
+}
+
+/* ---------- Tally bar (grouped points bar under the score header) ---------- */
+.tally-wrap{margin-bottom:28px;}
+.tally-meta{
+  text-align:center; font-size:12px; color:var(--ink-dim); text-transform:uppercase;
+  letter-spacing:.06em; margin-bottom:8px; font-weight:600;
+}
+.tally-bar{
+  position:relative; height:56px; border-radius:28px;
+  box-shadow:0 2px 8px rgba(20,35,15,0.15);
+}
+.tally-segments{display:flex; width:100%; height:100%; border-radius:28px; overflow:hidden;}
+.tseg{flex:1; height:100%; border-right:1px solid rgba(255,255,255,0.28);}
+.tseg:last-child{border-right:none;}
+.tseg.a{background:var(--color-a);}
+.tseg.b{background:var(--color-b);}
+.tseg.half{background:var(--silver);}
+.tseg.half-a{flex:0.5; background:var(--color-a);}
+.tseg.half-b{flex:0.5; background:var(--color-b);}
+.tseg.pending{background:var(--panel);}
+.tseg.live-a{background:var(--color-a); opacity:.55; animation:pulseA 2.2s ease-in-out infinite;}
+.tseg.live-b{background:var(--color-b); opacity:.55; animation:pulseB 2.2s ease-in-out infinite;}
+.tseg.live-as{background:var(--neutral); opacity:.55; animation:pulseNeutral 2.2s ease-in-out infinite;}
+.tally-divider{position:absolute; top:0; bottom:0; width:2px; background:rgba(0,0,0,0.35); z-index:3;}
+.tally-num{
+  position:absolute; top:50%; transform:translateY(-50%); z-index:4;
+  font-family:'IBM Plex Mono',monospace; font-weight:800; font-size:clamp(20px,5vw,28px);
+  color:#fff; text-shadow:0 1px 4px rgba(0,0,0,0.35);
+}
+.tally-num.left{left:16px;}
+.tally-num.right{right:16px;}
+.trail-wrap{margin-bottom:26px;}
+.trail-grid{display:grid; grid-template-columns:1fr 1fr; gap:2px 28px;}
+@media (max-width:700px){ .trail-grid{grid-template-columns:1fr;} }
+.trail-row{display:flex; align-items:center; gap:10px; padding:6px 0;}
+.trail-session-label{
+  width:108px; flex-shrink:0; font-size:11px; line-height:1.25; color:var(--ink-dim);
+  text-transform:uppercase; letter-spacing:.05em;
+}
+.trail-session-label b{display:block; color:var(--ink); font-size:12px; letter-spacing:.03em;}
+.trail-blocks{display:flex; gap:5px; flex-wrap:wrap;}
+.blk{
+  width:17px;height:17px;border-radius:4px;
+  border:1.4px solid var(--line-strong);
+  position:relative; flex-shrink:0;
+}
+.blk.pending{background:transparent;}
+.blk.live-a{border-color:var(--color-a); background:rgba(42,66,112,0.14);}
+.blk.live-a::after{
+  content:''; position:absolute; inset:3px; border-radius:2px; background:var(--color-a);
+  animation:pulseA 2.2s ease-in-out infinite;
+}
+.blk.live-b{border-color:var(--color-b); background:rgba(154,58,44,0.14);}
+.blk.live-b::after{
+  content:''; position:absolute; inset:3px; border-radius:2px; background:var(--color-b);
+  animation:pulseB 2.2s ease-in-out infinite;
+}
+.blk.live-as{border-color:var(--neutral); background:rgba(139,150,134,0.18);}
+.blk.live-as::after{
+  content:''; position:absolute; inset:3px; border-radius:2px; background:var(--neutral);
+  animation:pulseNeutral 2.2s ease-in-out infinite;
+}
+.blk.a{background:var(--color-a); border-color:var(--color-a);}
+.blk.b{background:var(--color-b); border-color:var(--color-b);}
+.blk.half{background:var(--silver); border-color:var(--silver);}
+
+/* ---------- Match list (board detail + update view) ---------- */
+.sessions-grid{display:grid; grid-template-columns:1fr 1fr; gap:0 28px;}
+@media (max-width:700px){ .sessions-grid{grid-template-columns:1fr;} }
+.session-group{margin-bottom:22px;}
+.session-head{
+  display:flex; align-items:baseline; justify-content:space-between; gap:10px;
+  padding-bottom:8px; margin-bottom:10px; border-bottom:1px solid var(--line);
+}
+.session-head h3{margin:0; font-size:19px; font-weight:700; color:var(--ink);}
+.session-head span{font-size:12px; color:var(--ink-dim); text-transform:uppercase; letter-spacing:.06em;}
+.match-row{
+  display:flex; flex-direction:column; padding:20px 12px 10px; border-radius:10px;
+  background:var(--panel); border:1px solid var(--line); margin-bottom:8px;
+}
+.match-row .mr-row{display:flex; align-items:center; gap:10px; width:100%;}
+.match-row{cursor:pointer;}
+.match-row.expanded{border-color:var(--sage);}
+.match-row .row-chevron{flex-shrink:0; color:var(--ink-dim); font-size:11px; width:14px; text-align:center;}
+.row-scorecard{margin-top:10px; padding-top:10px; border-top:1px solid var(--line);}
+.match-row .idx{
+  flex-shrink:0; width:22px; height:22px; border-radius:50%; background:rgba(192,138,46,0.14);
+  color:var(--gold); font-family:'IBM Plex Mono',monospace; font-size:11px; font-weight:700;
+  display:flex; align-items:center; justify-content:center;
+}
+.match-row .side{flex:1; font-size:14px; font-weight:500; line-height:1.3;}
+.match-row .side.a{text-align:right; color:var(--ink);}
+.match-row .side.b{text-align:left; color:var(--ink);}
+.match-row .pill-wrap{position:relative; flex-shrink:0;}
+.match-row .status-pill{
+  flex-shrink:0; min-width:104px; text-align:center; padding:6px 10px; border-radius:20px;
+  font-family:'IBM Plex Mono',monospace; font-size:12px; font-weight:600;
+  background:#fff; color:var(--ink-dim); border:1px solid var(--line-strong);
+}
+.match-row .status-pill.decided{color:var(--ink); border:none;}
+.match-row .status-pill.decided.a{background:var(--color-a); color:#fff; padding-left:18px; clip-path:polygon(22% 0, 100% 0, 100% 100%, 22% 100%, 0 50%);}
+.match-row .status-pill.decided.b{background:var(--color-b); color:#fff; padding-right:18px; clip-path:polygon(0 0, 78% 0, 100% 50%, 78% 100%, 0 100%);}
+.match-row .status-pill.decided.half{background:var(--silver); color:#fff;}
+.match-row .status-pill.live-a{color:#fff; background:var(--color-a); border:none; padding-left:18px; clip-path:polygon(22% 0, 100% 0, 100% 100%, 22% 100%, 0 50%);}
+.match-row .status-pill.live-b{color:#fff; background:var(--color-b); border:none; padding-right:18px; clip-path:polygon(0 0, 78% 0, 100% 50%, 78% 100%, 0 100%);}
+.match-row .status-pill.live-as{color:var(--neutral); border-color:var(--neutral); background:rgba(139,150,134,0.12);}
+
+/* ---------- Update view ---------- */
+.picker-row{display:flex; gap:8px; overflow-x:auto; padding-bottom:6px; margin-bottom:16px;}
+.picker-row button{
+  flex-shrink:0; background:var(--panel); border:1px solid var(--line-strong); color:var(--ink-dim);
+  padding:10px 14px; border-radius:9px; font-size:13px; font-weight:600; cursor:pointer;
+}
+.picker-row button.active{background:var(--sage); color:#fff; border-color:var(--sage);}
+
+.match-tile-grid{display:flex; flex-direction:column; gap:10px;}
+.match-tile{
+  display:flex; flex-direction:column; padding:22px 14px 14px; border-radius:12px;
+  background:var(--panel); border:1px solid var(--line); cursor:pointer; text-align:left; width:100%;
+  font-family:inherit;
+}
+.match-tile .mt-row{display:flex; align-items:center; gap:12px; width:100%;}
+.match-tile:hover{border-color:var(--sage);}
+.match-tile .mt-num{
+  width:32px; height:32px; border-radius:50%; background:var(--gold); color:#fff; font-family:'IBM Plex Mono',monospace;
+  font-weight:700; font-size:13px; display:flex; align-items:center; justify-content:center; flex-shrink:0;
+}
+.match-tile .mt-side{flex:1; min-width:0; font-size:13.5px; font-weight:600; line-height:1.3; color:var(--ink);}
+.match-tile .mt-side.a{text-align:right;}
+.match-tile .mt-side.b{text-align:left;}
+.match-tile .pill-wrap{position:relative; flex-shrink:0;}
+.match-tile .mt-status{
+  flex-shrink:0; font-family:'IBM Plex Mono',monospace; font-size:10.5px; font-weight:700; color:var(--ink-dim);
+  padding:5px 9px; border-radius:14px; background:#fff; border:1px solid var(--line-strong);
+}
+.match-tile .mt-status.decided{border:none;}
+.match-tile .mt-status.decided.a{background:var(--color-a); color:#fff; padding-left:16px; clip-path:polygon(22% 0, 100% 0, 100% 100%, 22% 100%, 0 50%);}
+.match-tile .mt-status.decided.b{background:var(--color-b); color:#fff; padding-right:16px; clip-path:polygon(0 0, 78% 0, 100% 50%, 78% 100%, 0 100%);}
+.match-tile .mt-status.decided.half{background:var(--silver); color:#fff;}
+.match-tile .mt-status.live-a{color:#fff; background:var(--color-a); border:none; padding-left:16px; clip-path:polygon(22% 0, 100% 0, 100% 100%, 22% 100%, 0 50%);}
+.match-tile .mt-status.live-b{color:#fff; background:var(--color-b); border:none; padding-right:16px; clip-path:polygon(0 0, 78% 0, 100% 50%, 78% 100%, 0 100%);}
+.match-tile .mt-status.live-as{color:var(--neutral); border-color:var(--neutral); background:rgba(139,150,134,0.12);}
+@keyframes pulseText{0%,100%{opacity:1;} 50%{opacity:.35;}}
+.in-play-tag{
+  position:absolute; top:-16px; left:50%; transform:translateX(-50%);
+  font-size:9.5px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; white-space:nowrap;
+  color:#E15C4E; animation:pulseText 2.6s ease-in-out infinite; pointer-events:none;
+}
+.back-to-matches{
+  display:inline-flex; align-items:center; gap:6px; background:none; border:none; color:var(--sage-dark);
+  font-weight:700; font-size:13px; cursor:pointer; padding:8px 0 14px; font-family:inherit;
+}
+
+.edit-card{
+  background:var(--panel); border:1px solid var(--line); border-radius:14px;
+  padding:16px; margin-bottom:14px;
+}
+.match-num{
+  display:inline-flex; align-items:center; gap:7px; font-family:'IBM Plex Mono',monospace;
+  font-size:12px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--gold);
+  margin-bottom:12px;
+}
+.match-num .n{
+  width:20px;height:20px;border-radius:50%; background:var(--gold); color:#fff;
+  display:flex; align-items:center; justify-content:center; font-size:11px;
+}
+.names{display:flex; gap:14px; margin-bottom:12px;}
+.names-col{flex:1; display:flex; flex-direction:column; gap:7px;}
+.names-col .col-label{font-size:10px; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-dim);}
+.edit-card input[type=text]{
+  width:100%; background:#fff; border:1px solid var(--line-strong); border-radius:8px;
+  color:var(--ink); padding:9px 10px; font-size:14px; font-family:inherit;
+}
+.names-col.a input[type=text]{border-left:3px solid var(--color-a);}
+.names-col.b input[type=text]{border-left:3px solid var(--color-b);}
+.seg{display:flex; gap:6px; margin-bottom:12px;}
+.seg button{
+  flex:1; background:#fff; border:1px solid var(--line-strong); color:var(--ink-dim);
+  padding:9px 6px; border-radius:8px; font-size:12.5px; font-weight:600; cursor:pointer;
+}
+.seg button.active{background:var(--gold); color:#fff; border-color:var(--gold);}
+.subcontrols{display:none; gap:8px; margin-bottom:12px; flex-wrap:wrap;}
+.subcontrols.show{display:flex;}
+.subcontrols .grp{flex:1; min-width:110px;}
+.subcontrols label{display:block; font-size:10.5px; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-dim); margin-bottom:4px;}
+.subcontrols select, .subcontrols input{
+  width:100%; background:#fff; border:1px solid var(--line-strong); border-radius:7px;
+  color:var(--ink); padding:8px; font-size:13px; font-family:inherit;
+}
+.save-btn{
+  width:100%; padding:11px; border-radius:9px; border:none; background:var(--sage); color:#fff;
+  font-weight:700; font-size:13.5px; letter-spacing:.02em; cursor:pointer;
+}
+.save-btn.saved{background:var(--ok); color:#fff;}
+
+.mode-toggle{display:flex; gap:6px; margin-bottom:14px;}
+.mode-toggle button{
+  flex:1; background:#fff; border:1px solid var(--line-strong); color:var(--ink-dim);
+  padding:8px 6px; border-radius:8px; font-size:12px; font-weight:600; cursor:pointer;
+}
+.mode-toggle button.active{background:var(--sage); color:#fff; border-color:var(--sage);}
+
+.hole-stepper{background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:16px; margin-bottom:10px;}
+.hs-nav{display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;}
+.hs-nav button{
+  background:#fff; border:1px solid var(--line-strong); color:var(--ink); width:38px; height:38px;
+  border-radius:10px; font-size:18px; cursor:pointer; flex-shrink:0;
+}
+.hs-nav button:disabled{opacity:.3; cursor:default;}
+.hs-hole-info{text-align:center;}
+.hs-hole-info .num{font-family:'Fraunces',serif; font-weight:800; font-size:26px; color:var(--ink); line-height:1;}
+.hs-hole-info .meta{font-size:11px; color:var(--ink-dim); text-transform:uppercase; letter-spacing:.06em; margin-top:3px;}
+.hs-score-row{display:flex; align-items:center; justify-content:space-between; padding:12px 2px; border-top:1px solid var(--line-strong);}
+.hs-team-name{font-weight:700; font-size:14.5px; flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+.hs-team-name.a{color:var(--color-a);}
+.hs-team-name.b{color:var(--color-b);}
+.hs-stepper{display:flex; align-items:center; gap:12px; flex-shrink:0;}
+.hs-stepper button{
+  width:42px; height:42px; border-radius:50%; border:1.5px solid var(--line-strong); background:#fff;
+  font-size:20px; font-weight:700; color:var(--ink); cursor:pointer;
+}
+.hs-stepper .val{font-family:'IBM Plex Mono',monospace; font-weight:800; font-size:22px; min-width:26px; text-align:center; color:var(--ink);}
+.hs-save-btn{
+  width:100%; margin-top:14px; padding:14px; border-radius:10px; border:none; background:var(--sage);
+  color:#fff; font-weight:700; font-size:14.5px; cursor:pointer;
+}
+.hs-toggle-full{
+  display:block; width:100%; text-align:center; font-size:12px; color:var(--ink-dim);
+  text-decoration:underline; margin:4px 0 10px; cursor:pointer; background:none; border:none; padding:6px;
+}
+.full-grid-wrap{display:none;}
+.full-grid-wrap.show{display:block;}
+.qr-heading{font-size:11px; text-transform:uppercase; letter-spacing:.07em; font-weight:700; color:var(--ink-dim); margin-bottom:8px;}
+.card-actions{display:flex; gap:8px; margin-top:16px;}
+.card-actions .save-btn{flex:2;}
+.reset-btn{
+  flex:1; padding:11px; border-radius:9px; border:1px solid rgba(154,58,44,0.4); background:#fff;
+  color:#9A3A2C; font-weight:700; font-size:12.5px; cursor:pointer;
+}
+.danger-card{border-color:rgba(154,58,44,0.35);}
+.danger-card h3{color:#9A3A2C;}
+.danger-btn{
+  width:100%; padding:12px; border-radius:9px; border:1px solid rgba(154,58,44,0.4); background:#fff;
+  color:#9A3A2C; font-weight:700; font-size:13px; cursor:pointer; margin-bottom:10px; font-family:inherit;
+}
+.danger-btn.solid{background:#9A3A2C; color:#fff; border:none;}
+.holes-status{
+  text-align:center; padding:9px; border-radius:8px; margin-bottom:12px; font-family:'IBM Plex Mono',monospace;
+  font-weight:700; font-size:13px; background:var(--panel); border:1px solid var(--line-strong); color:var(--ink);
+}
+.holes-status.decided{border:none; color:#fff;}
+.holes-status.decided.a{background:var(--color-a); padding-left:20px; clip-path:polygon(10% 0, 100% 0, 100% 100%, 10% 100%, 0 50%);}
+.holes-status.decided.b{background:var(--color-b); padding-right:20px; clip-path:polygon(0 0, 90% 0, 100% 50%, 90% 100%, 0 100%);}
+.holes-status.decided.half{background:var(--silver);}
+.holes-status.live-a{color:#fff; background:var(--color-a); border:none; padding-left:20px; clip-path:polygon(10% 0, 100% 0, 100% 100%, 10% 100%, 0 50%);}
+.holes-status.live-b{color:#fff; background:var(--color-b); border:none; padding-right:20px; clip-path:polygon(0 0, 90% 0, 100% 50%, 90% 100%, 0 100%);}
+.holes-status.live-as{color:var(--neutral); border-color:var(--neutral); background:rgba(139,150,134,0.12);}
+.hole-tally-nums{display:grid; grid-template-columns:repeat(9, 1fr); gap:4px; margin-top:8px;}
+.hole-tally-nums div{
+  text-align:center; font-family:'IBM Plex Mono',monospace; font-size:9px; font-weight:700;
+  color:var(--ink-dim);
+}
+.hole-tally-strip{display:grid; grid-template-columns:repeat(9, 1fr); gap:4px; padding:2px 0 8px;}
+.hole-tally-chip{
+  font-family:'IBM Plex Mono',monospace; font-size:9.5px; font-weight:700;
+  padding:4px 2px; border-radius:8px; text-align:center; overflow:hidden; text-overflow:ellipsis;
+}
+.hole-tally-chip.a{background:var(--color-a); color:#fff;}
+.hole-tally-chip.b{background:var(--color-b); color:#fff;}
+.hole-tally-chip.as{background:var(--neutral); color:#fff;}
+.hole-tally-chip.empty{background:transparent; border:1px dashed var(--line-strong); color:var(--line-strong);}
+.strokes-row{display:flex; gap:10px; margin-bottom:14px;}
+.strokes-row .grp{flex:1; min-width:130px;}
+.strokes-row label{display:block; font-size:10px; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-dim); margin-bottom:4px;}
+.strokes-row input{
+  width:100%; background:#fff; border:1px solid var(--line-strong); border-radius:7px;
+  color:var(--ink); padding:8px; font-size:13px; text-align:center; font-family:'IBM Plex Mono',monospace;
+}
+.hole-nine-label{font-size:11px; font-weight:700; color:var(--ink-dim); text-transform:uppercase; letter-spacing:.06em; margin:4px 0 6px;}
+.hole-grid-wrap{overflow-x:auto; margin-bottom:6px; -webkit-overflow-scrolling:touch;}
+.hole-grid{border-collapse:collapse; width:100%;}
+.hole-grid th, .hole-grid td{padding:2px; text-align:center;}
+.hole-grid thead th{
+  font-family:'IBM Plex Mono',monospace; font-size:10px; font-weight:600; color:var(--ink-dim);
+}
+.hole-grid .rowlabel{
+  font-family:'IBM Plex Sans',sans-serif; font-weight:700; font-size:10.5px; text-align:left;
+  padding-right:6px; white-space:nowrap; color:var(--ink);
+}
+.hole-grid input{
+  width:34px; padding:5px 1px; text-align:center; border:1px solid var(--line-strong); border-radius:5px;
+  background:#fff; color:var(--ink); font-family:'IBM Plex Mono',monospace; font-size:12px;
+  -moz-appearance:textfield;
+}
+.hole-grid input::-webkit-outer-spin-button,
+.hole-grid input::-webkit-inner-spin-button{
+  -webkit-appearance:none; margin:0;
+}
+.hole-grid tr.row-a input{border-bottom:2px solid var(--color-a);}
+.hole-grid tr.row-b input{border-bottom:2px solid var(--color-b);}
+
+/* ---------- Setup view ---------- */
+.setup-card{background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:16px; margin-bottom:14px;}
+.setup-card h3{margin:0 0 12px; font-size:16px; color:var(--ink);}
+.setup-row{display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:10px;}
+.setup-row label{font-size:13.5px; color:var(--ink-dim); flex:1;}
+.setup-row input[type=number]{
+  width:70px; background:#fff; border:1px solid var(--line-strong); border-radius:7px;
+  color:var(--ink); padding:8px; font-size:14px; text-align:center; font-family:'IBM Plex Mono',monospace;
+}
+.teamname-row{display:flex; gap:10px; margin-bottom:16px;}
+.teamname-row input[type=text]{
+  flex:1; background:#fff; border:1px solid var(--line-strong); border-radius:8px;
+  color:var(--ink); padding:10px; font-size:15px; font-weight:600; font-family:inherit;
+}
+.teamname-row input.a{border-left:4px solid var(--color-a);}
+.teamname-row input.b{border-left:4px solid var(--color-b);}
+.color-block{display:flex; gap:16px;}
+.color-col{flex:1;}
+.color-col .cc-label{font-size:12px; font-weight:700; margin-bottom:8px; display:flex; align-items:center; gap:6px;}
+.color-col.a .cc-label{color:var(--color-a);}
+.color-col.b .cc-label{color:var(--color-b);}
+.swatches{display:flex; flex-wrap:wrap; gap:8px; margin-bottom:8px;}
+.swatch{
+  width:28px; height:28px; border-radius:50%; border:2px solid transparent; cursor:pointer;
+  display:flex; align-items:center; justify-content:center; color:#fff; font-size:13px;
+  box-shadow:0 0 0 1px var(--line-strong);
+}
+.swatch.selected{border-color:var(--ink); box-shadow:0 0 0 1px var(--ink);}
+.custom-color-row{display:flex; align-items:center; gap:8px;}
+.custom-color-row input[type=color]{
+  width:38px; height:32px; border:none; border-radius:6px; background:transparent; cursor:pointer; padding:0;
+}
+.custom-color-row span{font-size:11.5px; color:var(--ink-dim);}
+.apply-btn{
+  width:100%; padding:13px; border-radius:9px; border:none; background:var(--sage); color:#fff;
+  font-weight:700; font-size:14px; cursor:pointer; margin-top:6px;
+}
+.note{font-size:12px; color:var(--ink-dim); line-height:1.5; margin-top:4px;}
+.footer-note{text-align:center; color:var(--ink-dim); font-size:11px; padding:20px 18px 0; letter-spacing:.03em;}
+
+.pin-gate{max-width:320px; margin:40px auto; text-align:center; padding:28px 24px; background:var(--panel); border:1px solid var(--line); border-radius:14px;}
+.pin-gate h3{margin:0 0 8px; font-size:18px;}
+.pin-gate input{
+  width:100%; text-align:center; font-size:22px; letter-spacing:6px; padding:12px;
+  border:1px solid var(--line-strong); border-radius:8px; margin:14px 0 10px; font-family:'IBM Plex Mono',monospace;
+  color:var(--ink); background:#fff;
+}
+
+/* ---------- MVP view ---------- */
+.mvp-empty{text-align:center; padding:40px 20px; color:var(--ink-dim); font-size:14px; line-height:1.6;}
+.mvp-row{
+  display:flex; align-items:center; gap:12px; padding:12px 14px; border-radius:12px;
+  background:var(--panel); border:1px solid var(--line); margin-bottom:8px;
+}
+.mvp-row.top{background:linear-gradient(90deg, rgba(192,138,46,0.16), rgba(192,138,46,0.05)); border:1px solid var(--gold);}
+.mvp-rank{
+  width:28px;height:28px;border-radius:50%; flex-shrink:0; display:flex; align-items:center; justify-content:center;
+  font-family:'IBM Plex Mono',monospace; font-weight:700; font-size:13px; background:#fff; color:var(--ink-dim); border:1px solid var(--line-strong);
+}
+.mvp-row.top .mvp-rank{background:var(--gold); color:#fff; border:none;}
+.mvp-name-wrap{flex:1; min-width:0;}
+.mvp-name{font-weight:700; font-size:15px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color:var(--ink);}
+.mvp-team{font-size:11px; text-transform:uppercase; letter-spacing:.05em; margin-top:2px;}
+.mvp-stats{text-align:right; flex-shrink:0;}
+.mvp-wins{font-family:'IBM Plex Mono',monospace; font-weight:700; font-size:18px; color:var(--ink);}
+.mvp-margin{font-size:11px; color:var(--ink-dim);}
+.mvp-crown{font-size:16px; margin-right:2px;}
+
+/* ---------- Live session view ---------- */
+.live-score-line{
+  text-align:center; font-family:'IBM Plex Mono',monospace; font-weight:800; font-size:26px;
+  margin:6px 0 4px;
+}
+.live-score-line .ls-dash{color:var(--ink-dim); margin:0 12px; font-weight:500;}
+.live-session-title{
+  text-align:center; font-family:'Fraunces',serif; font-weight:700; font-size:22px; color:var(--ink);
+  margin-bottom:18px;
+}
+.live-session-title span{
+  display:block; font-family:'IBM Plex Sans',sans-serif; font-weight:600; font-size:11px;
+  text-transform:uppercase; letter-spacing:.1em; color:var(--gold); margin-top:2px;
+}
+.live-grid{display:grid; grid-template-columns:1fr 1fr; gap:18px; align-items:start;}
+.live-col{display:flex; flex-direction:column; gap:14px;}
+.match-row.live-fixed{cursor:default;}
+@media (max-width:800px){
+  .live-grid{grid-template-columns:1fr;}
+}
+
+/* ---------- History view ---------- */
+.history-title{text-align:center; margin-bottom:6px;}
+.history-title h2{
+  font-family:'Fraunces',serif; font-weight:700; font-size:26px; color:var(--ink); margin:0;
+}
+.history-title .sub{font-size:12px; color:var(--ink-dim); text-transform:uppercase; letter-spacing:.1em; margin-top:4px;}
+.history-summary{
+  display:flex; justify-content:center; gap:36px; margin:22px 0 28px; padding:20px;
+  background:var(--panel); border:1px solid var(--line); border-radius:14px;
+}
+.history-summary .hs-stat{text-align:center;}
+.history-summary .hs-num{font-family:'IBM Plex Mono',monospace; font-weight:800; font-size:32px;}
+.history-summary .hs-label{font-size:11px; text-transform:uppercase; letter-spacing:.08em; color:var(--ink-dim); margin-top:2px;}
+.history-card{background:var(--panel); border:1px solid var(--line); border-radius:14px; overflow:hidden;}
+.history-row{
+  display:flex; align-items:baseline; gap:16px; padding:14px 18px; border-bottom:1px solid var(--line);
+}
+.history-row:last-child{border-bottom:none;}
+.history-row:nth-child(even){background:rgba(20,35,15,0.02);}
+.history-year{
+  font-family:'Fraunces',serif; font-weight:700; font-size:19px; color:var(--gold);
+  width:50px; flex-shrink:0;
+}
+.history-result{
+  flex:1; display:grid; grid-template-columns:1fr 34px 18px 34px 1fr; align-items:baseline; gap:8px;
+  font-family:'IBM Plex Mono',monospace; font-size:14px;
+}
+.history-result .hr-team{overflow-wrap:break-word;}
+.history-result .hr-left{text-align:right;}
+.history-result .hr-right{text-align:left;}
+.history-result .hr-team.winner{font-weight:800; font-size:15.5px;}
+.history-result .hr-team.loser{color:var(--ink-dim); font-weight:500;}
+.history-result .hr-lscore{text-align:right;}
+.history-result .hr-rscore{text-align:left;}
+.history-result .hr-dash{text-align:center; color:var(--ink-dim); font-weight:500;}
+@media (max-width:480px){
+  .history-row{padding:12px 10px; gap:10px;}
+  .history-year{width:38px; font-size:16px;}
+  .history-result{grid-template-columns:1fr 28px 12px 28px 1fr; gap:5px; font-size:12.5px;}
+  .history-result .hr-team.winner{font-size:13.5px;}
+}
+</style>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-database-compat.js"></script>
+</head>
+<body>
+<div id="app">
+  <div class="topbar">
+    <div class="brand">
+      <div class="dot live" id="liveDot"></div>
+      <div class="brand-title" id="brandTitle" spellcheck="false">BGC Ryder Cup</div>
+    </div>
+    <div class="nav">
+      <button data-view="board" class="active">Board</button>
+      <button data-view="update">Update</button>
+      <button data-view="mvp">MVP</button>
+      <button data-view="history">History</button>
+      <button data-view="live">Live</button>
+      <button data-view="setup">Setup</button>
+    </div>
+  </div>
+
+  <div class="view" id="view-board"></div>
+  <div class="view hidden" id="view-update"></div>
+  <div class="view hidden" id="view-mvp"></div>
+  <div class="view hidden" id="view-history"></div>
+  <div class="view hidden" id="view-live"></div>
+  <div class="view hidden" id="view-setup"></div>
+
+  <div class="footer-note">Scores sync across devices every few seconds &middot; last update <span id="lastSync">—</span></div>
+</div>
+
+<script>
+// ====================================================================
+// PASTE YOUR FIREBASE CONFIG HERE — see the setup guide for how to get this.
+// (Firebase console → Project settings → General → Your apps → the </> web icon)
+// ====================================================================
+const firebaseConfig = {
+  apiKey: "AIzaSyB-ePG8798a3e99YibOFqqn2zEMT31xA20",
+  authDomain: "ryder-cup-cd3c8.firebaseapp.com",
+  databaseURL: "https://ryder-cup-cd3c8-default-rtdb.firebaseio.com",
+  projectId: "ryder-cup-cd3c8",
+  storageBucket: "ryder-cup-cd3c8.firebasestorage.app",
+  messagingSenderId: "425549902302",
+  appId: "1:425549902302:web:b19e032ded894995b86d4f"
+};
+firebase.initializeApp(firebaseConfig);
+const dbRef = firebase.database().ref('ryder-event-v1');
+// ====================================================================
+
+// ====================================================================
+// Two separate PINs. Share SCORER_PIN with your scorers — it only unlocks the
+// Update tab. Keep SETUP_PIN to yourself/organisers — it unlocks Setup, and
+// knowing the scorer PIN does not also unlock it. Board and MVP stay open to
+// everyone. This is a simple deterrent, not strong security — both PINs live
+// in this file's own source code, so this isn't meant to stop a determined
+// technical person, just casual visitors clicking around.
+// ====================================================================
+const SCORER_PIN = '1234';
+const SETUP_PIN = '5678';
+// ====================================================================
+
+const STORE_KEY = 'ryder-event-v1';
+const SESSION_TEMPLATE = [
+  {id:'satam', label:'Saturday Morning', sub:'Fourball', type:'fourball', count:4},
+  {id:'satpm', label:'Saturday Afternoon', sub:'Greensomes', type:'foursomes', count:4},
+  {id:'sunam', label:'Sunday Morning', sub:'Fourball', type:'fourball', count:4},
+  {id:'sunpm', label:'Sunday Afternoon', sub:'Singles', type:'singles', count:12},
+];
+const COLOR_SWATCHES = ['#2A4270','#9A3A2C','#1F6E5C','#6B4C9A','#C24C39','#3C5A96','#B08D2B','#3D3D3D'];
+const TROPHY_ICON = `<svg class="trophy-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3h8v4a4 4 0 0 1-8 0V3z"/><path d="M8 4H4.5v1a4 4 0 0 0 4 4"/><path d="M16 4h3.5v1a4 4 0 0 1-4 4"/><path d="M12 11v3.5"/><path d="M9.5 20h5"/><path d="M9.5 20l.8-2.8a2 2 0 0 1 1.9-1.4h.6a2 2 0 0 1 1.9 1.4l.8 2.8"/></svg>`;
+
+// Past results, most recent first. Winner is always listed first for each year.
+const PAST_RESULTS = [
+  {year:2024, winner:'Reivers', winnerScore:16.5, loser:'Centurions', loserScore:13.5},
+  {year:2023, winner:'Reivers', winnerScore:17, loser:'Centurions', loserScore:13},
+  {year:2022, winner:'Centurions', winnerScore:16, loser:'Reivers', loserScore:14},
+  {year:2021, winner:'Reivers', winnerScore:17, loser:'Centurions', loserScore:13},
+  {year:2020, winner:'Reivers', winnerScore:18, loser:'Centurions', loserScore:12},
+  {year:2019, winner:'Centurions', winnerScore:14.5, loser:'Reivers', loserScore:12.5},
+  {year:2018, winner:'Reivers', winnerScore:14, loser:'Centurions', loserScore:13},
+  {year:2017, winner:'Reivers', winnerScore:14.5, loser:'Centurions', loserScore:12.5},
+  {year:2016, winner:'Reivers', winnerScore:15, loser:'Centurions', loserScore:12},
+  {year:2015, winner:'Reivers', winnerScore:19.5, loser:'Centurions', loserScore:7.5},
+  {year:2014, winner:'Reivers', winnerScore:17.5, loser:'Centurions', loserScore:9.5},
+  {year:2013, winner:'Reivers', winnerScore:16.5, loser:'Centurions', loserScore:10.5},
+  {year:2012, winner:'Centurions', winnerScore:18.5, loser:'Reivers', loserScore:11.5},
+  {year:2011, winner:'Reivers', winnerScore:15.5, loser:'Centurions', loserScore:14.5},
+  {year:2010, winner:'Centurions', winnerScore:16, loser:'Reivers', loserScore:14},
+];
+
+
+let state = null;
+let currentView = 'board';
+let updateSessionId = null;
+let selectedMatchId = null; // which single match the Update tab is currently focused on
+let stepperIdx = {}; // matchId -> current hole index shown in the on-course stepper (UI-only, not saved)
+let expandedBoardMatches = new Set(); // matchIds currently showing their tally dropdown on the Board
+
+// Some mobile browsers (private/incognito mode especially) block or throw on
+// localStorage access. These wrappers fall back to an in-memory flag for the
+// current page load so a correct PIN can never silently fail to unlock.
+let unlockMemory = {};
+function isUnlocked(key){
+  if(unlockMemory[key]) return true;
+  try { return localStorage.getItem(key) === 'yes'; } catch(e){ return false; }
+}
+function setUnlocked(key){
+  unlockMemory[key] = true;
+  try { localStorage.setItem(key, 'yes'); } catch(e){ /* fine — memory flag still holds for this session */ }
+}
+
+// TV rotation: auto-cycles Board -> MVP -> History on this device only (not synced
+// to anyone else). Settings are saved locally so a TV keeps its rotation on reload.
+const ROTATION_ORDER = ['board', 'mvp', 'history'];
+let rotationTimer = null;
+let rotationIdx = 0;
+function getRotationSettings(){
+  try{
+    const raw = localStorage.getItem('rotationSettings');
+    if(raw) return Object.assign({enabled:false, board:20, mvp:12, history:12}, JSON.parse(raw));
+  }catch(e){}
+  return {enabled:false, board:20, mvp:12, history:12};
+}
+function saveRotationSettings(s){
+  try{ localStorage.setItem('rotationSettings', JSON.stringify(s)); }catch(e){}
+}
+async function rotationGoTo(view){
+  await loadState();
+  renderAll();
+  setView(view);
+}
+async function stepRotation(){
+  const s = getRotationSettings();
+  if(!s.enabled) return;
+  rotationIdx = (rotationIdx + 1) % ROTATION_ORDER.length;
+  await rotationGoTo(ROTATION_ORDER[rotationIdx]);
+  scheduleNextRotation();
+}
+function scheduleNextRotation(){
+  if(rotationTimer){ clearTimeout(rotationTimer); rotationTimer = null; }
+  const s = getRotationSettings();
+  if(!s.enabled) return;
+  const seconds = Math.max(3, parseInt(s[ROTATION_ORDER[rotationIdx]]) || 15);
+  rotationTimer = setTimeout(stepRotation, seconds * 1000);
+}
+async function startRotation(){
+  const s = getRotationSettings();
+  s.enabled = true;
+  saveRotationSettings(s);
+  rotationIdx = 0;
+  await rotationGoTo(ROTATION_ORDER[0]);
+  scheduleNextRotation();
+  renderSetup();
+}
+function stopRotation(){
+  const s = getRotationSettings();
+  s.enabled = false;
+  saveRotationSettings(s);
+  if(rotationTimer){ clearTimeout(rotationTimer); rotationTimer = null; }
+  renderSetup();
+}
+
+function emptyHoles(){ return new Array(18).fill(''); }
+
+// True if this match's hole scores are stored per-player (fourball) rather than
+// one combined value per side (singles/foursomes).
+function isFourballMatch(m){ return Array.isArray(m.holeScoresA) && Array.isArray(m.holeScoresA[0]); }
+
+function matchHasHoleData(m){
+  const flat = arr => isFourballMatch(m) ? arr.flat() : arr;
+  return flat(m.holeScoresA).some(x=>x!=='' && x!=null) || flat(m.holeScoresB).some(x=>x!=='' && x!=null);
+}
+
+function getStepperIdx(m){
+  if(stepperIdx[m.id] !== undefined) return stepperIdx[m.id];
+  let idx = 17;
+  const arrays = isFourballMatch(m) ? [...m.holeScoresA, ...m.holeScoresB] : [m.holeScoresA, m.holeScoresB];
+  for(let i=0;i<18;i++){
+    if(arrays.some(arr=> arr[i]==='' || arr[i]==null)){ idx = i; break; }
+  }
+  stepperIdx[m.id] = idx;
+  return idx;
+}
+
+function playerCount(type){ return type==='singles' ? 1 : 2; }
+
+function shapeMatch(m, type){
+  const pCount = playerCount(type);
+  if(!Array.isArray(m.playersA)) m.playersA = m.labelA ? [m.labelA] : [];
+  if(!Array.isArray(m.playersB)) m.playersB = m.labelB ? [m.labelB] : [];
+  while(m.playersA.length < pCount) m.playersA.push('');
+  while(m.playersB.length < pCount) m.playersB.push('');
+  m.playersA = m.playersA.slice(0, pCount);
+  m.playersB = m.playersB.slice(0, pCount);
+  delete m.labelA; delete m.labelB;
+  if(typeof m.status !== 'string') m.status = 'pending';
+
+  // Handicap index per player, used to auto-calculate strokes for fourball/singles
+  // (see computeStrokesFromHandicaps). Sized to match the player count for every
+  // session type, even ones that don't currently use it, to keep this simple.
+  if(!Array.isArray(m.handicapsA)) m.handicapsA = [];
+  if(!Array.isArray(m.handicapsB)) m.handicapsB = [];
+  while(m.handicapsA.length < pCount) m.handicapsA.push('');
+  while(m.handicapsB.length < pCount) m.handicapsB.push('');
+  m.handicapsA = m.handicapsA.slice(0, pCount);
+  m.handicapsB = m.handicapsB.slice(0, pCount);
+
+  if(type === 'fourball'){
+    // Fourball: each player plays their own ball with their own handicap allowance,
+    // so scores and strokes are stored per player (2 per side) rather than per side.
+    const shapePlayerHoles = (arr)=>{
+      if(!Array.isArray(arr) || !Array.isArray(arr[0])) arr = [emptyHoles(), emptyHoles()];
+      while(arr.length < 2) arr.push(emptyHoles());
+      return arr.slice(0,2).map(sub=>{
+        sub = Array.isArray(sub) ? sub.slice() : emptyHoles();
+        while(sub.length < 18) sub.push('');
+        return sub.slice(0,18);
+      });
+    };
+    m.holeScoresA = shapePlayerHoles(m.holeScoresA);
+    m.holeScoresB = shapePlayerHoles(m.holeScoresB);
+    const shapeStrokes = (arr)=>{
+      if(!Array.isArray(arr)) arr = [0,0];
+      while(arr.length < 2) arr.push(0);
+      return arr.slice(0,2).map(v=> typeof v==='number' ? v : 0);
+    };
+    m.strokesA = shapeStrokes(m.strokesA);
+    m.strokesB = shapeStrokes(m.strokesB);
+  } else {
+    if(!Array.isArray(m.holeScoresA) || Array.isArray(m.holeScoresA[0])) m.holeScoresA = emptyHoles();
+    if(!Array.isArray(m.holeScoresB) || Array.isArray(m.holeScoresB[0])) m.holeScoresB = emptyHoles();
+    while(m.holeScoresA.length < 18) m.holeScoresA.push('');
+    while(m.holeScoresB.length < 18) m.holeScoresB.push('');
+    if(typeof m.strokesA !== 'number') m.strokesA = 0;
+    if(typeof m.strokesB !== 'number') m.strokesB = 0;
+  }
+  delete m.inputMode;
+  return m;
+}
+
+// WHS Course Handicap table for Bellingham Golf Club, Men's White tees
+// (Course Rating 70.3, Slope 131). Each entry is [minIndex, maxIndex, courseHandicap].
+// Plus-handicaps (better than scratch) are stored as negative numbers — enter a
+// +2.3 handicap as -2.3.
+const WHITE_TEES_TABLE = [
+  [-5.0,-4.8,-6],[-4.7,-3.9,-5],[-3.8,-3.1,-4],[-3.0,-2.2,-3],[-2.1,-1.3,-2],[-1.2,-0.5,-1],
+  [-0.4,0.4,0],[0.5,1.2,1],[1.3,2.1,2],[2.2,3.0,3],[3.1,3.8,4],[3.9,4.7,5],[4.8,5.6,6],
+  [5.7,6.4,7],[6.5,7.3,8],[7.4,8.1,9],[8.2,9.0,10],[9.1,9.9,11],[10.0,10.7,12],[10.8,11.6,13],
+  [11.7,12.5,14],[12.6,13.3,15],[13.4,14.2,16],[14.3,15.0,17],[15.1,15.9,18],[16.0,16.8,19],
+  [16.9,17.6,20],[17.7,18.5,21],[18.6,19.4,22],[19.5,20.2,23],[20.3,21.1,24],[21.2,21.9,25],
+  [22.0,22.8,26],[22.9,23.7,27],[23.8,24.5,28],[24.6,25.4,29],[25.5,26.3,30],[26.4,27.1,31],
+  [27.2,28.0,32],[28.1,28.8,33],[28.9,29.7,34],[29.8,30.6,35],[30.7,31.4,36],[31.5,32.3,37],
+  [32.4,33.2,38],[33.3,34.0,39],[34.1,34.9,40],[35.0,35.7,41],[35.8,36.6,42],[36.7,37.5,43],
+  [37.6,38.3,44],[38.4,39.2,45],[39.3,40.1,46],[40.2,40.9,47],[41.0,41.8,48],[41.9,42.6,49],
+  [42.7,43.5,50],[43.6,44.4,51],[44.5,45.2,52],[45.3,46.1,53],[46.2,47.0,54],[47.1,47.8,55],
+  [47.9,48.7,56],[48.8,49.5,57],[49.6,50.4,58],[50.5,51.3,59],[51.4,52.1,60],[52.2,53.0,61],
+  [53.1,53.9,62],[54.0,54.0,63]
+];
+
+// Converts a Handicap Index to this course's Course Handicap off the White tees.
+// Values outside the table are clamped to the nearest end rather than rejected.
+function lookupCourseHandicap(indexValue){
+  const idx = Number(indexValue);
+  if(indexValue==='' || indexValue==null || isNaN(idx)) return null;
+  if(idx < WHITE_TEES_TABLE[0][0]) return WHITE_TEES_TABLE[0][2];
+  if(idx > WHITE_TEES_TABLE[WHITE_TEES_TABLE.length-1][1]) return WHITE_TEES_TABLE[WHITE_TEES_TABLE.length-1][2];
+  const row = WHITE_TEES_TABLE.find(r=> idx >= r[0] && idx <= r[1]);
+  return row ? row[2] : null;
+}
+
+// Looks up a player's handicap index from the club's saved chart by name
+// (case-insensitive, exact match). Returns '' if not found.
+function lookupHandicap(name){
+  if(!name || !Array.isArray(state.playerHandicaps)) return '';
+  const trimmed = name.trim().toLowerCase();
+  const found = state.playerHandicaps.find(p=> p.name && p.name.trim().toLowerCase()===trimmed);
+  return found ? found.hcp : '';
+}
+
+// R&A handicap allowances, applied to each player's COURSE handicap (converted from
+// their index via the table above) rather than the raw index: fourball uses 90% of
+// the difference to the lowest course handicap in the four-ball; singles uses the
+// full (100%) difference between the two course handicaps; foursomes/greensomes
+// combines each side's two course handicaps into a team playing handicap (60% of
+// the lower, 40% of the higher, rounded), then the side with the lower team handicap
+// plays off scratch and the other gets the difference. Returns true if every
+// handicap needed was present and strokes were recalculated.
+function computeStrokesFromHandicaps(match, type){
+  const toCH = v => lookupCourseHandicap(v);
+  if(type==='fourball'){
+    const h = [toCH(match.handicapsA[0]), toCH(match.handicapsA[1]), toCH(match.handicapsB[0]), toCH(match.handicapsB[1])];
+    if(h.some(v=>v===null)) return false;
+    const lowest = Math.min(...h);
+    match.strokesA[0] = Math.round((h[0]-lowest)*0.9);
+    match.strokesA[1] = Math.round((h[1]-lowest)*0.9);
+    match.strokesB[0] = Math.round((h[2]-lowest)*0.9);
+    match.strokesB[1] = Math.round((h[3]-lowest)*0.9);
+    return true;
+  }
+  if(type==='singles'){
+    const hA = toCH(match.handicapsA[0]), hB = toCH(match.handicapsB[0]);
+    if(hA===null || hB===null) return false;
+    const lowest = Math.min(hA, hB);
+    match.strokesA = Math.round(hA-lowest);
+    match.strokesB = Math.round(hB-lowest);
+    return true;
+  }
+  if(type==='foursomes'){
+    const hA = [toCH(match.handicapsA[0]), toCH(match.handicapsA[1])];
+    const hB = [toCH(match.handicapsB[0]), toCH(match.handicapsB[1])];
+    if(hA.some(v=>v===null) || hB.some(v=>v===null)) return false;
+    const teamHandicap = pair => Math.round(0.6*Math.min(...pair) + 0.4*Math.max(...pair));
+    const teamA = teamHandicap(hA), teamB = teamHandicap(hB);
+    const lowest = Math.min(teamA, teamB);
+    match.strokesA = teamA - lowest;
+    match.strokesB = teamB - lowest;
+    return true;
+  }
+  return false;
+}
+
+function buildMatches(sessionId, count, existing, type){
+  const out = [];
+  for(let i=0;i<count;i++){
+    if(existing[i]){ out.push(shapeMatch(existing[i], type)); continue; }
+    out.push(shapeMatch({
+      id: sessionId+'-'+i,
+      status:'pending', // pending | live | final
+      leader:null, up:1, thru:1,      // live state
+      winner:null, margin:'', halved:false // final state
+    }, type));
+  }
+  return out;
+}
+
+function defaultCourse(){
+  const holes = [];
+  for(let i=1;i<=18;i++){ holes.push({hole:i, par:4, si:i}); }
+  return { holes };
+}
+
+function defaultState(){
+  const sessions = SESSION_TEMPLATE.map(t => ({
+    id:t.id, label:t.label, sub:t.sub, type:t.type, count:t.count,
+    matches: buildMatches(t.id, t.count, [], t.type)
+  }));
+  return { title:'BGC Ryder Cup', teamA:'USA', teamB:'Europe', colorA:COLOR_SWATCHES[0], colorB:COLOR_SWATCHES[1], course:defaultCourse(), defendingTeam:null, logoDataUrl:null, playerHandicaps:[], sessions };
+}
+
+function applyColors(){
+  document.documentElement.style.setProperty('--color-a', state.colorA);
+  document.documentElement.style.setProperty('--color-b', state.colorB);
+}
+
+async function loadState(){
+  try{
+    const snap = await dbRef.once('value');
+    const val = snap.val();
+    if(val){ state = val; }
+    else { state = defaultState(); }
+  }catch(e){
+    console.error('load failed', e);
+    state = state || defaultState();
+  }
+  // heal in case of older data / removed fields
+  if(!state.sessions) state.sessions = defaultState().sessions;
+  state.title = 'BGC Ryder Cup';
+  if(!state.colorA) state.colorA = COLOR_SWATCHES[0];
+  if(!state.colorB) state.colorB = COLOR_SWATCHES[1];
+  if(!state.course || !Array.isArray(state.course.holes) || state.course.holes.length!==18) state.course = defaultCourse();
+  if(state.defendingTeam !== 'A' && state.defendingTeam !== 'B') state.defendingTeam = null;
+  if(typeof state.logoDataUrl !== 'string') state.logoDataUrl = null;
+  if(!Array.isArray(state.playerHandicaps)) state.playerHandicaps = [];
+  delete state.winMarker;
+  state.sessions.forEach(s=>{ if(s.sub === 'Foursomes') s.sub = 'Greensomes'; });
+  state.sessions.forEach(s=>{ s.matches = s.matches.map(m=>shapeMatch(m, s.type)); });
+  applyColors();
+}
+
+async function saveState(){
+  try{
+    await dbRef.set(state);
+    document.getElementById('lastSync').textContent = new Date().toLocaleTimeString();
+  }catch(e){
+    console.error('save failed', e);
+  }
+}
+
+function computeTotals(){
+  let a=0,b=0,decided=0,total=0;
+  state.sessions.forEach(s=>{
+    s.matches.forEach(m=>{
+      total += 1;
+      if(m.status==='final'){
+        decided += 1;
+        if(m.halved){ a+=0.5; b+=0.5; }
+        else if(m.winner==='A'){ a+=1; }
+        else if(m.winner==='B'){ b+=1; }
+      }
+    });
+  });
+  const threshold = Math.floor(total/2)+0.5;
+  return {a,b,decided,total,threshold};
+}
+
+function fmtPts(n){
+  return Number.isInteger(n) ? n.toString() : n.toFixed(1);
+}
+
+// Given gross scores per hole and strokes given, work out who's winning and by how much,
+// using the course's stroke index to decide which holes carry a handicap stroke.
+// Fourball matches store scores/strokes per player and use best-ball (lowest net of
+// the two partners counts for the side); singles/foursomes use one combined ball per side.
+function computeFromHoles(m, course){
+  const holes = (course && course.holes && course.holes.length===18) ? course.holes : defaultCourse().holes;
+  const fourball = isFourballMatch(m);
+  let up = 0, holesPlayed = 0, decidedAtHole = null;
+  const tally = []; // cumulative 'up' value after each hole played so far, for the running tally strip
+
+  for(let i=0;i<18;i++){
+    let holeReady, bothPickedUp, aConceded, bConceded, netDiff;
+
+    if(fourball){
+      const rawA = [m.holeScoresA[0][i], m.holeScoresA[1][i]];
+      const rawB = [m.holeScoresB[0][i], m.holeScoresB[1][i]];
+      const readyA = rawA.every(v=> v==='PU' || !(v===''||v==null));
+      const readyB = rawB.every(v=> v==='PU' || !(v===''||v==null));
+      holeReady = readyA && readyB;
+      if(holeReady){
+        const si = holes[i].si;
+        const netFor = (raw, strokes)=> raw.map((v,pi)=>{
+          if(v==='PU') return null;
+          const g = Number(v);
+          if(isNaN(g)) return null;
+          const stroke = (strokes[pi]||0) >= si ? 1 : 0;
+          return g - stroke;
+        }).filter(v=>v!==null);
+        const bestA = netFor(rawA, m.strokesA);
+        const bestB = netFor(rawB, m.strokesB);
+        bothPickedUp = bestA.length===0 && bestB.length===0;
+        aConceded = bestA.length===0 && bestB.length>0;
+        bConceded = bestB.length===0 && bestA.length>0;
+        if(!bothPickedUp && !aConceded && !bConceded){
+          netDiff = Math.min(...bestA) - Math.min(...bestB);
+        }
+      }
+    } else {
+      const rawA = m.holeScoresA[i], rawB = m.holeScoresB[i];
+      const aReady = rawA==='PU' || !(rawA===''||rawA==null);
+      const bReady = rawB==='PU' || !(rawB===''||rawB==null);
+      holeReady = aReady && bReady;
+      if(holeReady){
+        bothPickedUp = rawA==='PU' && rawB==='PU';
+        aConceded = rawA==='PU' && rawB!=='PU';
+        bConceded = rawB==='PU' && rawA!=='PU';
+        if(!bothPickedUp && !aConceded && !bConceded){
+          const gA = Number(rawA), gB = Number(rawB);
+          if(isNaN(gA) || isNaN(gB)){ holeReady = false; }
+          else {
+            const si = holes[i].si;
+            const strokeA = (m.strokesA||0) >= si ? 1 : 0;
+            const strokeB = (m.strokesB||0) >= si ? 1 : 0;
+            netDiff = (gA - strokeA) - (gB - strokeB);
+          }
+        }
+      }
+    }
+
+    // A hole only counts once both sides have either a score or the 'PU' (picked up) marker.
+    // A plain blank means the hole simply hasn't been reached yet.
+    if(!holeReady) break;
+    holesPlayed = i+1;
+    if(bothPickedUp){
+      // both picked up — halved, no change to the running score
+    } else if(aConceded){
+      up -= 1; // A conceded, B wins the hole outright
+    } else if(bConceded){
+      up += 1; // B conceded, A wins the hole outright
+    } else if(netDiff < 0){
+      up += 1;
+    } else if(netDiff > 0){
+      up -= 1;
+    }
+    tally.push(up);
+    const remaining = 18 - (i+1);
+    if(Math.abs(up) > remaining){ decidedAtHole = i+1; break; }
+  }
+  m.holeTally = tally;
+
+  if(holesPlayed===0){
+    m.status='pending'; m.leader=null; m.up=1; m.thru=1; m.winner=null; m.margin=''; m.halved=false;
+    return;
+  }
+  const finished = decidedAtHole!==null || holesPlayed===18;
+  if(finished){
+    m.status='final';
+    if(up===0){
+      m.halved=true; m.winner=null; m.margin='';
+    } else {
+      m.halved=false;
+      m.winner = up>0 ? 'A' : 'B';
+      const marginHoles = Math.abs(up);
+      const finishedAt = decidedAtHole || 18;
+      const remaining = 18 - finishedAt;
+      m.margin = remaining>0 ? (marginHoles+'&'+remaining) : (marginHoles+' UP');
+    }
+  } else {
+    m.status='live';
+    m.leader = up>0 ? 'A' : (up<0 ? 'B' : 'AS');
+    m.up = Math.abs(up) || 1;
+    m.thru = holesPlayed;
+  }
+}
+
+function matchStatusText(m){
+  if(m.status==='final'){
+    if(m.halved) return 'HALVED';
+    return (m.margin ? m.margin.toUpperCase() : 'WIN');
+  }
+  if(m.status==='live'){
+    if(m.leader==='AS') return 'A/S THRU '+m.thru;
+    return (m.up||1)+' UP THRU '+m.thru;
+  }
+  return 'NOT STARTED';
+}
+
+// Turns a cumulative 'up' value (positive = A ahead, negative = B ahead, 0 = level)
+// into a short display label and which side (if any) it favours.
+function tallyLabel(up){
+  if(up===0) return {text:'A/S', side:'as'};
+  return {text: Math.abs(up)+' UP', side: up>0 ? 'a' : 'b'};
+}
+
+// Builds the hole-by-hole tally as two rows of 9 (front nine / back nine), each with a
+// row of hole numbers above the result chips, so it's clear which hole each one is —
+// unplayed holes within a nine show as an empty placeholder to keep columns aligned.
+function tallyGridHtml(tally){
+  const nine = (startHole)=>{
+    const cols = Array.from({length:9},(_,i)=>startHole+i);
+    const headers = cols.map(h=>`<div>${h}</div>`).join('');
+    const chips = cols.map(h=>{
+      const i = h-1;
+      if(i < tally.length){
+        const t = tallyLabel(tally[i]);
+        return `<div class="hole-tally-chip ${t.side}">${t.text}</div>`;
+      }
+      return `<div class="hole-tally-chip empty">–</div>`;
+    }).join('');
+    return `<div class="hole-tally-nums">${headers}</div><div class="hole-tally-strip">${chips}</div>`;
+  };
+  return `<div class="hole-tally-wrap">${nine(1)}${nine(10)}</div>`;
+}
+
+// Shared class suffix used to colour any of the status pills (Board row, Update tile,
+// or the hole-by-hole status box) the same way, based on a match's current state.
+function pillStateClass(m){
+  if(m.status==='live') return m.leader==='A' ? 'live-a' : (m.leader==='B' ? 'live-b' : 'live-as');
+  if(m.status==='final') return 'decided ' + (m.halved ? 'half' : (m.winner==='A' ? 'a' : 'b'));
+  return '';
+}
+
+function displayNames(players, idx){
+  const joined = players.filter(p=>p && p.trim()).join(' & ');
+  return joined || 'Match '+(idx+1);
+}
+
+// Same as displayNames, but stacks each player on their own line instead of joining with "&" —
+// avoids uneven text-wrapping when names are different lengths. Returns pre-escaped HTML.
+function displayNamesHtml(players, idx){
+  const names = players.filter(p=>p && p.trim());
+  if(names.length===0) return 'Match '+(idx+1);
+  return names.map(n=>escapeHtml(n)).join('<br>');
+}
+
+/* ---------------- BOARD VIEW ---------------- */
+// Builds the single grouped points bar under the header: every match across the whole
+// event, sorted into won-by-A / halved / still-to-play / won-by-B, with the running
+// totals overlaid at each end (mirrors the classic on-course Ryder Cup tally graphic).
+function renderTallyBar(t, aNeeds, bNeeds){
+  const allMatches = [];
+  state.sessions.forEach(s=> s.matches.forEach(m=> allMatches.push(m)));
+
+  const wonA = allMatches.filter(m=> m.status==='final' && !m.halved && m.winner==='A');
+  const leaningA = allMatches.filter(m=> m.status==='live' && m.leader==='A');
+  const halved = allMatches.filter(m=> m.status==='final' && m.halved);
+  const neutral = allMatches.filter(m=> m.status==='pending' || (m.status==='live' && m.leader==='AS'));
+  const leaningB = allMatches.filter(m=> m.status==='live' && m.leader==='B');
+  const wonB = allMatches.filter(m=> m.status==='final' && !m.halved && m.winner==='B');
+
+  const seg = (cls, m) => `<div class="tseg ${cls}" title="${escapeHtml(matchStatusText(m))}"></div>`;
+  let segHtml = '';
+  wonA.forEach(m=> segHtml += seg('a', m));              // full win sits at the edge, by A's number
+  halved.forEach(m=> segHtml += seg('half-a', m));        // half-point next
+  leaningA.forEach(m=> segHtml += seg('live-a', m));      // live matches closest to the middle
+  neutral.forEach(m=> segHtml += seg('pending', m));
+  leaningB.forEach(m=> segHtml += seg('live-b', m));      // live matches closest to the middle
+  halved.forEach(m=> segHtml += seg('half-b', m));        // half-point next
+  wonB.forEach(m=> segHtml += seg('b', m));               // full win sits at the edge, by B's number
+
+  return `<div class="tally-wrap">
+    <div class="tally-meta">${t.decided}/${t.total} matches complete</div>
+    <div class="tally-bar">
+      <div class="tally-segments">${segHtml}</div>
+      <div class="tally-num left">${fmtPts(t.a)}</div>
+      <div class="tally-num right">${fmtPts(t.b)}</div>
+
+    </div>
+  </div>`;
+}
+
+function renderBoard(){
+  const el = document.getElementById('view-board');
+  const t = computeTotals();
+  const aName = state.teamA || 'Team A';
+  const bName = state.teamB || 'Team B';
+  const retainThreshold = t.threshold - 0.5;
+  const aNeeds = state.defendingTeam === 'A' ? retainThreshold : t.threshold;
+  const bNeeds = state.defendingTeam === 'B' ? retainThreshold : t.threshold;
+  const aLabel = state.defendingTeam === 'A' ? 'to retain' : 'to win';
+  const bLabel = state.defendingTeam === 'B' ? 'to retain' : 'to win';
+  const aWon = t.a >= aNeeds;
+  const bWon = t.b >= bNeeds;
+
+  let html = '';
+  if(aWon || bWon){
+    const winner = aWon ? aName : bName;
+    const verb = (aWon && state.defendingTeam==='A') || (bWon && state.defendingTeam==='B') ? 'retain' : 'win';
+    html += `<div class="clinched-banner">${escapeHtml(winner)} ${verb} the Cup</div>`;
+  }
+
+  html += `
+  <div class="matchup">
+    <div class="team-block a ${aWon ? 'celebrate' : ''}">
+      <div class="tname">${escapeHtml(aName)}</div>
+      <div class="tpoints">${fmtPts(t.a)}</div>
+      <div class="team-req">${fmtPts(aNeeds)} ${aLabel}</div>
+    </div>
+    <div class="vs-mid">
+      ${state.logoDataUrl ? `<img class="event-logo" src="${state.logoDataUrl}" alt="Event logo">` : ''}
+    </div>
+    <div class="team-block b ${bWon ? 'celebrate' : ''}">
+      <div class="tname">${escapeHtml(bName)}</div>
+      <div class="tpoints">${fmtPts(t.b)}</div>
+      <div class="team-req">${fmtPts(bNeeds)} ${bLabel}</div>
+    </div>
+  </div>`;
+
+  html += renderTallyBar(t, aNeeds, bNeeds);
+
+  html += `<div class="trail-wrap"><div class="trail-grid">`;
+  state.sessions.forEach(s=>{
+    html += `<div class="trail-row">
+      <div class="trail-session-label"><b>${escapeHtml(s.label)}</b>${escapeHtml(s.sub)}</div>
+      <div class="trail-blocks">`;
+    s.matches.forEach(m=>{
+      let cls = 'pending';
+      if(m.status==='live') cls = m.leader==='A' ? 'live-a' : (m.leader==='B' ? 'live-b' : 'live-as');
+      if(m.status==='final'){
+        cls = m.halved ? 'half' : (m.winner==='A' ? 'a' : 'b');
+      }
+      html += `<div class="blk ${cls}" title="${escapeHtml(matchStatusText(m))}"></div>`;
+    });
+    html += `</div></div>`;
+  });
+  html += `</div></div>`;
+
+  html += `<div class="sessions-grid">`;
+  state.sessions.forEach(s=>{
+    html += `<div class="session-group">
+      <div class="session-head"><h3>${escapeHtml(s.label)}</h3><span>${escapeHtml(s.sub)}</span></div>`;
+    s.matches.forEach((m,idx)=>{
+      if(matchHasHoleData(m)) computeFromHoles(m, state.course);
+      let pillCls = 'status-pill ' + pillStateClass(m);
+      const expanded = expandedBoardMatches.has(m.id);
+      const tally = m.holeTally || [];
+      html += `<div class="match-row ${expanded?'expanded':''}" data-mid="${m.id}">
+        <div class="mr-row">
+          <div class="idx">${idx+1}</div>
+          <div class="side a">${displayNamesHtml(m.playersA, idx)}</div>
+          <div class="pill-wrap">
+            <div class="${pillCls}">${matchStatusText(m)}</div>
+            ${m.status==='live' ? '<div class="in-play-tag">● In play</div>' : ''}
+          </div>
+          <div class="side b">${displayNamesHtml(m.playersB, idx)}</div>
+          <div class="row-chevron">${expanded ? '▴' : '▾'}</div>
+        </div>
+        ${expanded ? `<div class="row-scorecard">
+          ${tally.length ? tallyGridHtml(tally) : `<p class="note" style="text-align:center; margin:6px 0 0;">No holes played yet.</p>`}
+        </div>` : ''}
+      </div>`;
+    });
+    html += `</div>`;
+  });
+  html += `</div>`;
+
+  el.innerHTML = html;
+
+  el.querySelectorAll('.match-row').forEach(rowEl=>{
+    rowEl.onclick = ()=>{
+      const mid = rowEl.dataset.mid;
+      if(expandedBoardMatches.has(mid)) expandedBoardMatches.delete(mid);
+      else expandedBoardMatches.add(mid);
+      renderBoard();
+    };
+  });
+}
+
+/* ---------------- UPDATE VIEW ---------------- */
+function renderUpdate(){
+  const el = document.getElementById('view-update');
+
+  if(!isUnlocked('scorerPinOk')){
+    el.innerHTML = `<div class="pin-gate">
+      <h3>Scorer access</h3>
+      <p class="note">Enter the scorer PIN to update matches. Ask your event organiser if you don't have it.</p>
+      <input type="text" inputmode="numeric" pattern="[0-9]*" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" id="pinInput" placeholder="PIN">
+      <button class="apply-btn" id="pinSubmit" type="button">Enter</button>
+      <p class="note" id="pinError" style="color:#9A3A2C; display:none;">Incorrect PIN — try again.</p>
+    </div>`;
+    const tryPin = ()=>{
+      const val = document.getElementById('pinInput').value.trim();
+      if(val === SCORER_PIN){
+        setUnlocked('scorerPinOk');
+        renderUpdate();
+      } else {
+        document.getElementById('pinError').style.display = 'block';
+      }
+    };
+    document.getElementById('pinSubmit').onclick = tryPin;
+    document.getElementById('pinInput').addEventListener('keydown', e=>{
+      if(e.key==='Enter') tryPin();
+    });
+    return;
+  }
+
+  if(!updateSessionId) updateSessionId = state.sessions[0].id;
+  let html = `<div class="picker-row">`;
+  state.sessions.forEach(s=>{
+    html += `<button data-sid="${s.id}" class="${s.id===updateSessionId?'active':''}">${escapeHtml(s.label)}</button>`;
+  });
+  html += `</div>`;
+
+  const session = state.sessions.find(s=>s.id===updateSessionId);
+  const isSingles = session.type==='singles';
+  const course = state.course;
+
+  // Validate the selected match still belongs to this session; if not (or nothing
+  // selected yet), show a picker so a phone can only ever edit one match at a time.
+  if(selectedMatchId && !session.matches.find(m=>m.id===selectedMatchId)) selectedMatchId = null;
+
+  if(!selectedMatchId){
+    html += `<div class="match-tile-grid">`;
+    session.matches.forEach((m, idx)=>{
+      let mtCls = 'mt-status ' + pillStateClass(m);
+      html += `<button class="match-tile" data-select="${m.id}" type="button">
+        <div class="mt-row">
+          <div class="mt-num">${idx+1}</div>
+          <div class="mt-side a">${displayNamesHtml(m.playersA, idx)}</div>
+          <div class="pill-wrap">
+            <div class="${mtCls}">${matchStatusText(m)}</div>
+            ${m.status==='live' ? '<div class="in-play-tag">● In play</div>' : ''}
+          </div>
+          <div class="mt-side b">${displayNamesHtml(m.playersB, idx)}</div>
+        </div>
+      </button>`;
+    });
+    html += `</div>`;
+    el.innerHTML = html;
+    el.querySelectorAll('.picker-row button').forEach(btn=>{
+      btn.onclick = ()=>{ updateSessionId = btn.dataset.sid; selectedMatchId = null; renderUpdate(); };
+    });
+    el.querySelectorAll('[data-select]').forEach(btn=>{
+      btn.onclick = ()=>{ selectedMatchId = btn.dataset.select; renderUpdate(); };
+    });
+    return;
+  }
+
+  html += `<button class="back-to-matches" data-action="backtomatches" type="button">← Back to matches</button>`;
+
+  function playerLabel(m, side, pidx, teamName){
+    if(pidx===null) return teamName;
+    const arr = side==='A' ? m.playersA : m.playersB;
+    const name = arr[pidx] && arr[pidx].trim();
+    return name || (teamName + ' player ' + (pidx+1));
+  }
+
+  function strokesSummaryText(m, type){
+    const withCH = (label, strokes, idx) => {
+      const ch = lookupCourseHandicap(idx);
+      return `${label} ${strokes}${ch!==null ? ` (CH ${ch})` : ''}`;
+    };
+    if(type === 'foursomes'){
+      const chA = [lookupCourseHandicap(m.handicapsA[0]), lookupCourseHandicap(m.handicapsA[1])];
+      const chB = [lookupCourseHandicap(m.handicapsB[0]), lookupCourseHandicap(m.handicapsB[1])];
+      if(chA.some(v=>v===null) || chB.some(v=>v===null)){
+        return 'Strokes given, calculated automatically: enter all handicap indexes above to calculate';
+      }
+      const teamHandicap = pair => Math.round(0.6*Math.min(...pair) + 0.4*Math.max(...pair));
+      const teamA = teamHandicap(chA), teamB = teamHandicap(chB);
+      return `Strokes given, calculated automatically: ${escapeHtml(state.teamA)} ${m.strokesA} (team playing hcp ${teamA}) · ${escapeHtml(state.teamB)} ${m.strokesB} (team playing hcp ${teamB})`;
+    }
+    const parts = isFourballMatch(m)
+      ? `${withCH(escapeHtml(playerLabel(m,'A',0,state.teamA)), m.strokesA[0], m.handicapsA[0])} · ${withCH(escapeHtml(playerLabel(m,'A',1,state.teamA)), m.strokesA[1], m.handicapsA[1])} · ${withCH(escapeHtml(playerLabel(m,'B',0,state.teamB)), m.strokesB[0], m.handicapsB[0])} · ${withCH(escapeHtml(playerLabel(m,'B',1,state.teamB)), m.strokesB[1], m.handicapsB[1])}`
+      : `${withCH(escapeHtml(playerLabel(m,'A',0,state.teamA)), m.strokesA, m.handicapsA[0])} · ${withCH(escapeHtml(playerLabel(m,'B',0,state.teamB)), m.strokesB, m.handicapsB[0])}`;
+    const hcps = isFourballMatch(m) ? [m.handicapsA[0],m.handicapsA[1],m.handicapsB[0],m.handicapsB[1]] : [m.handicapsA[0],m.handicapsB[0]];
+    const missing = hcps.some(h=>h===''||h==null);
+    return `Strokes given, calculated automatically: ${parts}${missing ? ' — enter all handicap indexes above to calculate' : ''}`;
+  }
+
+  function holeGridHtml(m, isFront){
+    const start = isFront ? 0 : 9;
+    const cols = Array.from({length:9},(_,i)=>start+i);
+    const th = label => `<th class="rowlabel">${label}</th>`;
+    const fb = isFourballMatch(m);
+    const row = (side, pidx, cls)=>{
+      const arr = pidx===null ? (side==='A'?m.holeScoresA:m.holeScoresB) : (side==='A'?m.holeScoresA[pidx]:m.holeScoresB[pidx]);
+      const label = playerLabel(m, side, pidx, side==='A'?state.teamA:state.teamB);
+      return `<tr class="${cls}">${th(escapeHtml(label))}${cols.map(i=>`<td><input type="number" min="1" max="12" data-hole="${i}" data-hside="${side}" data-pidx="${pidx===null?'':pidx}" value="${arr[i]==='PU'?'':arr[i]}"></td>`).join('')}</tr>`;
+    };
+    const rows = fb
+      ? row('A',0,'row-a') + row('A',1,'row-a') + row('B',0,'row-b') + row('B',1,'row-b')
+      : row('A',null,'row-a') + row('B',null,'row-b');
+    return `<div class="hole-nine-label">${isFront?'Front nine':'Back nine'}</div>
+    <div class="hole-grid-wrap"><table class="hole-grid"><thead>
+    <tr>${th('Hole')}${cols.map(i=>`<th>${i+1}</th>`).join('')}</tr>
+    <tr>${th('Par')}${cols.map(i=>`<th>${course.holes[i].par}</th>`).join('')}</tr>
+    <tr>${th('S.I.')}${cols.map(i=>`<th>${course.holes[i].si}</th>`).join('')}</tr>
+    </thead><tbody>${rows}</tbody></table></div>`;
+  }
+
+  function stepperHtml(m){
+    const idx = getStepperIdx(m);
+    const hole = course.holes[idx];
+    const fb = isFourballMatch(m);
+    const scoreRow = (side, pidx)=>{
+      const arr = pidx===null ? (side==='A'?m.holeScoresA:m.holeScoresB) : (side==='A'?m.holeScoresA[pidx]:m.holeScoresB[pidx]);
+      const raw = arr[idx];
+      const disp = (raw==='' || raw==null) ? '–' : (raw==='PU' ? 'PU' : raw);
+      const label = playerLabel(m, side, pidx, side==='A'?state.teamA:state.teamB);
+      const dispKey = side + (pidx===null?'':pidx);
+      return `<div class="hs-score-row">
+        <div class="hs-team-name ${side==='A'?'a':'b'}">${escapeHtml(label)}</div>
+        <div class="hs-stepper">
+          <button class="hs-minus" data-hside="${side}" data-pidx="${pidx===null?'':pidx}" type="button">−</button>
+          <div class="val" data-valdisp="${dispKey}">${disp}</div>
+          <button class="hs-plus" data-hside="${side}" data-pidx="${pidx===null?'':pidx}" type="button">+</button>
+        </div>
+      </div>`;
+    };
+    const rows = fb
+      ? scoreRow('A',0) + scoreRow('A',1) + scoreRow('B',0) + scoreRow('B',1)
+      : scoreRow('A',null) + scoreRow('B',null);
+    return `<div class="hole-stepper" data-cur="${idx}">
+      <div class="hs-nav">
+        <button class="hs-prev" ${idx===0?'disabled':''} type="button">‹</button>
+        <div class="hs-hole-info">
+          <div class="num">Hole ${idx+1}</div>
+          <div class="meta">Par ${hole.par} · S.I. ${hole.si}</div>
+        </div>
+        <button class="hs-next" ${idx===17?'disabled':''} type="button">›</button>
+      </div>
+      ${rows}
+      <button class="hs-save-btn" data-action="savehole" type="button">${idx===17?'Save hole 18':'Save hole & next hole →'}</button>
+      <p class="note" style="text-align:center; margin-top:8px;">Leave a side blank (–) and save to mark that hole picked up — conceded if the other side has a score, halved if both are left blank.${fb ? ' In fourball, a hole only counts as picked up for a player once left blank on save — the partner score still counts if there is one.' : ''}</p>
+    </div>`;
+  }
+
+  session.matches.forEach((m, idx)=>{
+    if(m.id !== selectedMatchId) return;
+    // Auto-fill any blank handicap from the saved chart by matching player name, then
+    // recalculate strokes from whatever handicaps are present.
+    m.playersA.forEach((name,pi)=>{ if((m.handicapsA[pi]==='' || m.handicapsA[pi]==null)){ const h = lookupHandicap(name); if(h!=='') m.handicapsA[pi] = h; } });
+    m.playersB.forEach((name,pi)=>{ if((m.handicapsB[pi]==='' || m.handicapsB[pi]==null)){ const h = lookupHandicap(name); if(h!=='') m.handicapsB[pi] = h; } });
+    computeStrokesFromHandicaps(m, session.type);
+    const hasHoleData = matchHasHoleData(m);
+    if(hasHoleData) computeFromHoles(m, course);
+    html += `<div class="edit-card" data-mid="${m.id}">
+      <div class="match-num"><span class="n">${idx+1}</span> Match ${idx+1}</div>
+      <div class="names">
+        <div class="names-col a">
+          <div class="col-label">${escapeHtml(state.teamA)}</div>
+          ${m.playersA.map((p,pi)=>`<input type="text" placeholder="${isSingles?'Player name':'Player '+(pi+1)}" value="${escapeHtml(p)}" data-side="A" data-pidx="${pi}">`).join('')}
+        </div>
+        <div class="names-col b">
+          <div class="col-label">${escapeHtml(state.teamB)}</div>
+          ${m.playersB.map((p,pi)=>`<input type="text" placeholder="${isSingles?'Player name':'Player '+(pi+1)}" value="${escapeHtml(p)}" data-side="B" data-pidx="${pi}">`).join('')}
+        </div>
+      </div>
+
+      <div class="holes-col">
+        <div class="qr-heading">Hole-by-hole</div>
+        <div class="holes-status ${pillStateClass(m)}">${matchStatusText(m)}</div>
+        ${tallyGridHtml(m.holeTally||[])}
+        <div class="strokes-row" style="flex-wrap:wrap;">
+          ${(session.type==='fourball' || session.type==='foursomes') ? `
+            <div class="grp"><label>Index — ${escapeHtml(playerLabel(m,'A',0,state.teamA))}</label><input type="number" step="0.1" data-field="handicapA" data-pidx="0" value="${m.handicapsA[0]}"></div>
+            <div class="grp"><label>Index — ${escapeHtml(playerLabel(m,'A',1,state.teamA))}</label><input type="number" step="0.1" data-field="handicapA" data-pidx="1" value="${m.handicapsA[1]}"></div>
+            <div class="grp"><label>Index — ${escapeHtml(playerLabel(m,'B',0,state.teamB))}</label><input type="number" step="0.1" data-field="handicapB" data-pidx="0" value="${m.handicapsB[0]}"></div>
+            <div class="grp"><label>Index — ${escapeHtml(playerLabel(m,'B',1,state.teamB))}</label><input type="number" step="0.1" data-field="handicapB" data-pidx="1" value="${m.handicapsB[1]}"></div>
+          ` : `
+            <div class="grp"><label>Index — ${escapeHtml(playerLabel(m,'A',0,state.teamA))}</label><input type="number" step="0.1" data-field="handicapA" data-pidx="0" value="${m.handicapsA[0]}"></div>
+            <div class="grp"><label>Index — ${escapeHtml(playerLabel(m,'B',0,state.teamB))}</label><input type="number" step="0.1" data-field="handicapB" data-pidx="0" value="${m.handicapsB[0]}"></div>
+          `}
+        </div>
+        <p class="note strokes-summary" style="margin:-8px 0 12px;">${strokesSummaryText(m, session.type)}</p>
+        ${stepperHtml(m)}
+        <button class="hs-toggle-full" data-action="togglegrid" type="button">Show full scorecard ▾</button>
+        <div class="full-grid-wrap">
+          ${holeGridHtml(m, true)}
+          ${holeGridHtml(m, false)}
+          <p class="note">Editing here overrides the stepper above — both write to the same scores.</p>
+        </div>
+      </div>
+
+      <div class="card-actions">
+        <button class="save-btn" data-action="save">Save match</button>
+        <button class="reset-btn" data-action="reset">Reset match</button>
+      </div>
+    </div>`;
+  });
+
+  el.innerHTML = html;
+
+  el.querySelectorAll('.picker-row button').forEach(btn=>{
+    btn.onclick = ()=>{ updateSessionId = btn.dataset.sid; selectedMatchId = null; renderUpdate(); };
+  });
+
+  const backBtn = el.querySelector('[data-action=backtomatches]');
+  if(backBtn) backBtn.onclick = ()=>{ selectedMatchId = null; renderUpdate(); };
+
+  el.querySelectorAll('.edit-card').forEach(card=>{
+    const mid = card.dataset.mid;
+    const match = session.matches.find(mm=>mm.id===mid);
+
+    card.querySelectorAll('.names-col input[type=text]').forEach(inp=>{
+      inp.oninput = ()=>{
+        const side = inp.dataset.side;
+        const pidx = parseInt(inp.dataset.pidx);
+        if(side==='A') match.playersA[pidx] = inp.value;
+        else match.playersB[pidx] = inp.value;
+      };
+      inp.onblur = async ()=>{
+        await loadStateMergeOne(session.id, match);
+      };
+    });
+
+    card.querySelectorAll('.hole-grid input, .strokes-row input').forEach(inp=>{
+      inp.oninput = ()=>{
+        const pidxRaw = inp.dataset.pidx;
+        const pidx = (pidxRaw==='' || pidxRaw===undefined) ? null : parseInt(pidxRaw);
+        if(inp.dataset.field==='strokesA'){
+          if(pidx===null) match.strokesA = parseInt(inp.value)||0;
+          else match.strokesA[pidx] = parseInt(inp.value)||0;
+        } else if(inp.dataset.field==='strokesB'){
+          if(pidx===null) match.strokesB = parseInt(inp.value)||0;
+          else match.strokesB[pidx] = parseInt(inp.value)||0;
+        } else if(inp.dataset.field==='handicapA'){
+          match.handicapsA[pidx] = inp.value;
+          computeStrokesFromHandicaps(match, session.type);
+        } else if(inp.dataset.field==='handicapB'){
+          match.handicapsB[pidx] = inp.value;
+          computeStrokesFromHandicaps(match, session.type);
+        } else {
+          const hi = parseInt(inp.dataset.hole);
+          const side = inp.dataset.hside;
+          if(pidx===null){
+            if(side==='A') match.holeScoresA[hi] = inp.value;
+            else match.holeScoresB[hi] = inp.value;
+          } else {
+            if(side==='A') match.holeScoresA[pidx][hi] = inp.value;
+            else match.holeScoresB[pidx][hi] = inp.value;
+          }
+        }
+        computeFromHoles(match, state.course);
+        const statusEl = card.querySelector('.holes-status');
+        statusEl.className = 'holes-status ' + pillStateClass(match);
+        statusEl.textContent = matchStatusText(match);
+        const tallyWrapEl = card.querySelector('.hole-tally-wrap');
+        if(tallyWrapEl) tallyWrapEl.outerHTML = tallyGridHtml(match.holeTally||[]);
+        const summaryEl = card.querySelector('.strokes-summary');
+        if(summaryEl) summaryEl.textContent = strokesSummaryText(match, session.type);
+      };
+    });
+
+    const prevBtn = card.querySelector('.hs-prev');
+    if(prevBtn) prevBtn.onclick = ()=>{ stepperIdx[match.id] = Math.max(0, getStepperIdx(match)-1); renderUpdate(); };
+    const nextBtn = card.querySelector('.hs-next');
+    if(nextBtn) nextBtn.onclick = ()=>{ stepperIdx[match.id] = Math.min(17, getStepperIdx(match)+1); renderUpdate(); };
+
+    card.querySelectorAll('.hs-minus, .hs-plus').forEach(btn=>{
+      btn.onclick = ()=>{
+        const idx = getStepperIdx(match);
+        const side = btn.dataset.hside;
+        const pidxRaw = btn.dataset.pidx;
+        const pidx = (pidxRaw==='' || pidxRaw===undefined) ? null : parseInt(pidxRaw);
+        const base = side==='A' ? match.holeScoresA : match.holeScoresB;
+        const arr = pidx===null ? base : base[pidx];
+        let cur = parseInt(arr[idx]);
+        if(isNaN(cur)){
+          cur = state.course.holes[idx].par; // first tap just fills in par, doesn't add/subtract yet
+        } else {
+          cur = btn.classList.contains('hs-plus') ? Math.min(12, cur+1) : Math.max(1, cur-1);
+        }
+        arr[idx] = cur;
+        const dispKey = side + (pidx===null?'':pidx);
+        card.querySelector(`.val[data-valdisp="${dispKey}"]`).textContent = cur;
+      };
+    });
+
+    const toggleGridBtn = card.querySelector('[data-action=togglegrid]');
+    if(toggleGridBtn) toggleGridBtn.onclick = ()=>{
+      const wrap = card.querySelector('.full-grid-wrap');
+      const showing = wrap.classList.toggle('show');
+      toggleGridBtn.textContent = showing ? 'Hide full scorecard ▴' : 'Show full scorecard ▾';
+    };
+
+    const saveHoleBtn = card.querySelector('[data-action=savehole]');
+    if(saveHoleBtn) saveHoleBtn.onclick = async ()=>{
+      const idx = getStepperIdx(match);
+      if(isFourballMatch(match)){
+        [0,1].forEach(pidx=>{
+          if(match.holeScoresA[pidx][idx]==='' || match.holeScoresA[pidx][idx]==null) match.holeScoresA[pidx][idx] = 'PU';
+          if(match.holeScoresB[pidx][idx]==='' || match.holeScoresB[pidx][idx]==null) match.holeScoresB[pidx][idx] = 'PU';
+        });
+      } else {
+        if(match.holeScoresA[idx]==='' || match.holeScoresA[idx]==null) match.holeScoresA[idx] = 'PU';
+        if(match.holeScoresB[idx]==='' || match.holeScoresB[idx]==null) match.holeScoresB[idx] = 'PU';
+      }
+      computeFromHoles(match, state.course);
+      saveHoleBtn.textContent = 'Saving…';
+      await loadStateMergeOne(session.id, match);
+      stepperIdx[match.id] = Math.min(17, idx+1);
+      renderUpdate();
+      if(currentView==='board') renderBoard();
+      if(currentView==='mvp') renderMVP();
+    };
+
+    card.querySelector('[data-action=save]').onclick = async ()=>{
+      const saveBtn = card.querySelector('[data-action=save]');
+      const hasHoleData = matchHasHoleData(match);
+      if(hasHoleData) computeFromHoles(match, state.course);
+      saveBtn.textContent = 'Saving…';
+      await loadStateMergeOne(session.id, match);
+      saveBtn.textContent = 'Saved ✓';
+      saveBtn.classList.add('saved');
+      setTimeout(()=>{ saveBtn.textContent='Save match'; saveBtn.classList.remove('saved'); }, 1400);
+      if(currentView==='board') renderBoard();
+      if(currentView==='mvp') renderMVP();
+    };
+
+    card.querySelector('[data-action=reset]').onclick = async ()=>{
+      if(!confirm('Reset this match? This clears the players, scores and result.')) return;
+      const fresh = shapeMatch({ id: match.id }, session.type);
+      Object.keys(match).forEach(k=> delete match[k]);
+      Object.assign(match, fresh);
+      delete stepperIdx[match.id];
+      await loadStateMergeOne(session.id, match);
+      renderUpdate();
+      if(currentView==='board') renderBoard();
+      if(currentView==='mvp') renderMVP();
+    };
+  });
+}
+
+// Fetch latest shared state, apply this one match's edits on top, save.
+async function loadStateMergeOne(sessionId, editedMatch){
+  let fresh;
+  try{
+    const snap = await dbRef.once('value');
+    const val = snap.val();
+    fresh = val || defaultState();
+  }catch(e){ fresh = defaultState(); }
+  if(!fresh.sessions) fresh.sessions = defaultState().sessions;
+  const s = fresh.sessions.find(ss=>ss.id===sessionId);
+  if(s){
+    const idx = s.matches.findIndex(mm=>mm.id===editedMatch.id);
+    if(idx>-1) s.matches[idx] = editedMatch;
+  }
+  fresh.title = state.title; fresh.teamA = state.teamA; fresh.teamB = state.teamB;
+  fresh.colorA = state.colorA; fresh.colorB = state.colorB; fresh.course = state.course;
+  fresh.defendingTeam = state.defendingTeam;
+  fresh.logoDataUrl = state.logoDataUrl;
+  fresh.playerHandicaps = state.playerHandicaps;
+  state = fresh;
+  state.sessions.forEach(ss=>{ ss.matches = ss.matches.map(m=>shapeMatch(m, ss.type)); });
+  await saveState();
+}
+
+/* ---------------- MVP VIEW ---------------- */
+function parseMargin(str){
+  if(!str) return 0;
+  const m = str.match(/(\d+)/);
+  return m ? parseInt(m[1]) : 0;
+}
+
+function computeMVP(){
+  const players = {};
+  state.sessions.forEach(s=>{
+    s.matches.forEach(m=>{
+      if(m.status!=='final' || m.halved || !m.winner) return;
+      const winners = m.winner==='A' ? m.playersA : m.playersB;
+      const marginNum = parseMargin(m.margin);
+      winners.forEach(nm=>{
+        const trimmed = (nm||'').trim();
+        if(!trimmed) return;
+        const key = trimmed.toLowerCase();
+        if(!players[key]) players[key] = {name:trimmed, side:m.winner, wins:0, bestMargin:0, bestMarginText:''};
+        players[key].wins += 1;
+        if(marginNum >= players[key].bestMargin){
+          players[key].bestMargin = marginNum;
+          players[key].bestMarginText = m.margin || '';
+        }
+      });
+    });
+  });
+  return Object.values(players).sort((a,b)=> b.wins-a.wins || b.bestMargin-a.bestMargin);
+}
+
+function renderMVP(){
+  const el = document.getElementById('view-mvp');
+  const ranked = computeMVP();
+  if(ranked.length===0){
+    el.innerHTML = `<div class="mvp-empty">No results yet.<br>MVP standings appear here once matches are marked Final in the Update tab.</div>`;
+    return;
+  }
+  const topWins = ranked[0].wins, topMargin = ranked[0].bestMargin;
+  let html = '';
+  ranked.forEach((p, i)=>{
+    const isTop = p.wins===topWins && p.bestMargin===topMargin;
+    const teamName = p.side==='A' ? state.teamA : state.teamB;
+    html += `<div class="mvp-row ${isTop?'top':''}">
+      <div class="mvp-rank">${isTop?'★':(i+1)}</div>
+      <div class="mvp-name-wrap">
+        <div class="mvp-name">${isTop?'<span class=\"mvp-crown\">🏆</span>':''}${escapeHtml(p.name)}</div>
+        <div class="mvp-team" style="color:${p.side==='A'?'var(--color-a)':'var(--color-b)'}">${escapeHtml(teamName)}</div>
+      </div>
+      <div class="mvp-stats">
+        <div class="mvp-wins">${p.wins}</div>
+        <div class="mvp-margin">win${p.wins===1?'':'s'}${p.bestMarginText? ' · best '+escapeHtml(p.bestMarginText):''}</div>
+      </div>
+    </div>`;
+  });
+  el.innerHTML = html;
+}
+
+/* ---------------- HISTORY VIEW ---------------- */
+// Matches a historical team name against the currently-configured team names/colours,
+// so past results use the same colours as the live event where the names line up.
+function historyTeamColor(name){
+  if(state.teamA && name.toLowerCase() === state.teamA.toLowerCase()) return state.colorA;
+  if(state.teamB && name.toLowerCase() === state.teamB.toLowerCase()) return state.colorB;
+  return null;
+}
+
+// Fixed left/right order for the two teams, so every row (and the summary above it)
+// puts the same team on the same side regardless of who won that year. Prefers the
+// current live team A/B assignment; falls back to alphabetical if names don't match.
+function historyTeamOrder(){
+  const names = [];
+  PAST_RESULTS.forEach(r=>{
+    if(!names.includes(r.winner)) names.push(r.winner);
+    if(!names.includes(r.loser)) names.push(r.loser);
+  });
+  if(names.length===2){
+    const aMatch = names.find(n=> state.teamA && n.toLowerCase()===state.teamA.toLowerCase());
+    if(aMatch){ return [aMatch, names.find(n=>n!==aMatch)]; }
+    return names.slice().sort();
+  }
+  return names;
+}
+
+function renderHistory(){
+  const el = document.getElementById('view-history');
+  if(!PAST_RESULTS.length){
+    el.innerHTML = `<div class="mvp-empty">No past results recorded yet.</div>`;
+    return;
+  }
+
+  const wins = {};
+  PAST_RESULTS.forEach(r=>{ wins[r.winner] = (wins[r.winner]||0) + 1; });
+  const order = historyTeamOrder();
+
+  let html = `<div class="history-title">
+    <h2>Past Results</h2>
+    <div class="sub">${PAST_RESULTS[PAST_RESULTS.length-1].year}–${PAST_RESULTS[0].year}</div>
+  </div>`;
+
+  html += `<div class="history-summary">`;
+  order.forEach(name=>{
+    const c = historyTeamColor(name);
+    html += `<div class="hs-stat">
+      <div class="hs-num" style="${c?`color:${c}`:''}">${wins[name]||0}</div>
+      <div class="hs-label">${escapeHtml(name)}</div>
+    </div>`;
+  });
+  html += `</div>`;
+
+  html += `<div class="history-card">`;
+  PAST_RESULTS.forEach(r=>{
+    const leftName = order[0], rightName = order[1];
+    const leftWins = r.winner === leftName;
+    const leftScore = leftWins ? r.winnerScore : r.loserScore;
+    const rightScore = leftWins ? r.loserScore : r.winnerScore;
+    const leftColor = historyTeamColor(leftName);
+    const rightColor = historyTeamColor(rightName);
+    html += `<div class="history-row">
+      <div class="history-year">${r.year}</div>
+      <div class="history-result">
+        <span class="hr-team hr-left ${leftWins?'winner':'loser'}" style="${leftWins && leftColor ? `color:${leftColor}` : ''}">${escapeHtml(leftName)}</span>
+        <span class="hr-lscore">${fmtPts(leftScore)}</span>
+        <span class="hr-dash">–</span>
+        <span class="hr-rscore">${fmtPts(rightScore)}</span>
+        <span class="hr-team hr-right ${!leftWins?'winner':'loser'}" style="${!leftWins && rightColor ? `color:${rightColor}` : ''}">${escapeHtml(rightName)}</span>
+      </div>
+    </div>`;
+  });
+  html += `</div>`;
+
+  el.innerHTML = html;
+}
+
+/* ---------------- LIVE SESSION VIEW ---------------- */
+let liveSessionId = null;
+let liveSessionManual = false; // true once the viewer has manually picked a session this page load
+
+function pickAutoLiveSession(){
+  const withLive = state.sessions.find(s=> s.matches.some(m=>m.status==='live'));
+  return withLive ? withLive.id : state.sessions[0].id;
+}
+
+// Same match-row look as the Board, but always shows its full hole-by-hole tally
+// (no click-to-expand) since this view is meant to be left running unattended.
+function liveMatchCardHtml(m, idx){
+  if(matchHasHoleData(m)) computeFromHoles(m, state.course);
+  const pillCls = 'status-pill ' + pillStateClass(m);
+  const tally = m.holeTally || [];
+  return `<div class="match-row live-fixed">
+    <div class="mr-row">
+      <div class="idx">${idx+1}</div>
+      <div class="side a">${displayNamesHtml(m.playersA, idx)}</div>
+      <div class="pill-wrap">
+        <div class="${pillCls}">${matchStatusText(m)}</div>
+        ${m.status==='live' ? '<div class="in-play-tag">● In play</div>' : ''}
+      </div>
+      <div class="side b">${displayNamesHtml(m.playersB, idx)}</div>
+    </div>
+    <div class="row-scorecard">
+      ${tally.length ? tallyGridHtml(tally) : `<p class="note" style="text-align:center; margin:6px 0 0;">No holes played yet.</p>`}
+    </div>
+  </div>`;
+}
+
+function renderLive(){
+  const el = document.getElementById('view-live');
+  if(!liveSessionManual || !state.sessions.find(s=>s.id===liveSessionId)){
+    liveSessionId = pickAutoLiveSession();
+  }
+  const session = state.sessions.find(s=>s.id===liveSessionId);
+  const t = computeTotals();
+
+  let html = `<div class="picker-row">`;
+  state.sessions.forEach(s=>{
+    const isLive = s.matches.some(m=>m.status==='live');
+    html += `<button data-sid="${s.id}" class="${s.id===liveSessionId?'active':''}">${escapeHtml(s.label)}${isLive?' ●':''}</button>`;
+  });
+  html += `</div>`;
+
+  html += `<div class="live-score-line">
+    <span style="color:${state.colorA}">${escapeHtml(state.teamA)} ${fmtPts(t.a)}</span>
+    <span class="ls-dash">–</span>
+    <span style="color:${state.colorB}">${fmtPts(t.b)} ${escapeHtml(state.teamB)}</span>
+  </div>`;
+
+  html += `<div class="live-session-title">${escapeHtml(session.label)}<span>${escapeHtml(session.sub)}</span></div>`;
+
+  const half = Math.ceil(session.matches.length / 2);
+  let colsHtml = '';
+  [0, half].forEach(start=>{
+    const end = start === 0 ? half : session.matches.length;
+    let colHtml = '';
+    for(let i=start; i<end; i++){ colHtml += liveMatchCardHtml(session.matches[i], i); }
+    colsHtml += `<div class="live-col">${colHtml}</div>`;
+  });
+  html += `<div class="live-grid">${colsHtml}</div>`;
+
+  el.innerHTML = html;
+
+  el.querySelectorAll('.picker-row button').forEach(btn=>{
+    btn.onclick = ()=>{ liveSessionId = btn.dataset.sid; liveSessionManual = true; renderLive(); };
+  });
+}
+
+/* ---------------- SETUP VIEW ---------------- */
+// Resizes an uploaded logo down to a sensible size before storing it, so the
+// event data stays small and quick to sync across devices.
+function resizeImageFile(file, maxDim){
+  return new Promise((resolve, reject)=>{
+    const reader = new FileReader();
+    reader.onload = ()=>{
+      const img = new Image();
+      img.onload = ()=>{
+        let w = img.width, h = img.height;
+        if(w > h){ if(w > maxDim){ h = Math.round(h * (maxDim / w)); w = maxDim; } }
+        else { if(h > maxDim){ w = Math.round(w * (maxDim / h)); h = maxDim; } }
+        const canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+        resolve(canvas.toDataURL('image/png'));
+      };
+      img.onerror = reject;
+      img.src = reader.result;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+function colorSwatchHtml(side, current){
+  return COLOR_SWATCHES.map(c=>{
+    const sel = c.toLowerCase()===current.toLowerCase() ? 'selected' : '';
+    return `<div class="swatch ${sel}" style="background:${c}" data-side="${side}" data-color="${c}"></div>`;
+  }).join('');
+}
+
+function renderSetup(){
+  const el = document.getElementById('view-setup');
+
+  if(!isUnlocked('setupPinOk')){
+    el.innerHTML = `<div class="pin-gate">
+      <h3>Setup access</h3>
+      <p class="note">Enter the setup PIN to change setup. This is separate from the scorer PIN — ask your event organiser if you don't have it.</p>
+      <input type="text" inputmode="numeric" pattern="[0-9]*" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" id="setupPinInput" placeholder="PIN">
+      <button class="apply-btn" id="setupPinSubmit" type="button">Enter</button>
+      <p class="note" id="setupPinError" style="color:#9A3A2C; display:none;">Incorrect PIN — try again.</p>
+    </div>`;
+    const trySetupPin = ()=>{
+      const val = document.getElementById('setupPinInput').value.trim();
+      if(val === SETUP_PIN){
+        setUnlocked('setupPinOk');
+        renderSetup();
+      } else {
+        document.getElementById('setupPinError').style.display = 'block';
+      }
+    };
+    document.getElementById('setupPinSubmit').onclick = trySetupPin;
+    document.getElementById('setupPinInput').addEventListener('keydown', e=>{
+      if(e.key==='Enter') trySetupPin();
+    });
+    return;
+  }
+
+  function courseGridHtml(isFront){
+    const start = isFront ? 0 : 9;
+    const cols = Array.from({length:9},(_,i)=>start+i);
+    const th = label => `<th class="rowlabel">${label}</th>`;
+    return `<div class="hole-nine-label">${isFront?'Front nine':'Back nine'}</div>
+    <div class="hole-grid-wrap"><table class="hole-grid"><thead>
+    <tr>${th('Hole')}${cols.map(i=>`<th>${i+1}</th>`).join('')}</tr>
+    </thead><tbody>
+    <tr>${th('Par')}${cols.map(i=>`<td><input type="number" min="3" max="6" data-hole="${i}" data-cfield="par" value="${state.course.holes[i].par}"></td>`).join('')}</tr>
+    <tr>${th('S.I.')}${cols.map(i=>`<td><input type="number" min="1" max="18" data-hole="${i}" data-cfield="si" value="${state.course.holes[i].si}"></td>`).join('')}</tr>
+    </tbody></table></div>`;
+  }
+  let html = `
+  <div class="setup-card">
+    <h3>Team names &amp; colours</h3>
+    <div class="teamname-row">
+      <input type="text" class="a" id="teamAInput" value="${escapeHtml(state.teamA)}">
+      <input type="text" class="b" id="teamBInput" value="${escapeHtml(state.teamB)}">
+    </div>
+    <div class="color-block">
+      <div class="color-col a">
+        <div class="cc-label">${escapeHtml(state.teamA)}</div>
+        <div class="swatches" id="swatchesA">${colorSwatchHtml('A', state.colorA)}</div>
+        <div class="custom-color-row">
+          <input type="color" id="customColorA" value="${state.colorA}">
+          <span>custom</span>
+        </div>
+      </div>
+      <div class="color-col b">
+        <div class="cc-label">${escapeHtml(state.teamB)}</div>
+        <div class="swatches" id="swatchesB">${colorSwatchHtml('B', state.colorB)}</div>
+        <div class="custom-color-row">
+          <input type="color" id="customColorB" value="${state.colorB}">
+          <span>custom</span>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="setup-card">
+    <h3>Player handicaps</h3>
+    <div class="note" style="margin-bottom:10px;">Enter each player's <strong>Handicap Index</strong> once here (not their Course Handicap — that's converted automatically off the White tees using the club's WHS table). In the Update tab, entering a matching player name auto-fills it, and strokes are then calculated automatically following the World Handicap System: fourball gives 90% of the Course Handicap difference to the lowest in the four-ball; singles gives the full difference; greensomes combines each pair into a team playing handicap (60% of the lower Course Handicap, 40% of the higher), then gives the difference between the two teams. Plus-handicaps (better than scratch) go in as a negative number, e.g. a +2.3 handicap is entered as -2.3.</div>
+    <div id="handicapRows">
+      ${(state.playerHandicaps||[]).map((p,i)=>`<div class="setup-row" data-hcprow="${i}">
+        <input type="text" placeholder="Player name" value="${escapeHtml(p.name||'')}" data-hcpfield="name" data-hcpidx="${i}" style="flex:2; background:#fff; border:1px solid var(--line-strong); border-radius:7px; color:var(--ink); padding:8px 10px; font-size:13.5px; font-family:inherit;">
+        <input type="number" step="0.1" placeholder="Index" value="${p.hcp!==undefined && p.hcp!==null ? p.hcp : ''}" data-hcpfield="hcp" data-hcpidx="${i}" style="width:70px;">
+        <button type="button" data-hcpremove="${i}" style="background:none; border:1px solid rgba(154,58,44,0.4); color:#9A3A2C; border-radius:7px; padding:8px 10px; font-size:12px; font-weight:700; cursor:pointer; font-family:inherit;">Remove</button>
+      </div>`).join('')}
+    </div>
+    <button class="apply-btn" id="addHandicapRow" type="button" style="margin-top:4px;">Add player</button>
+  </div>
+  <div class="setup-card">
+    <h3>Event logo</h3>
+    <div class="note" style="margin-bottom:10px;">Shown between the two scores on the Board. Uploads are automatically resized to keep things quick to sync.</div>
+    <div class="logo-setup-row">
+      ${state.logoDataUrl ? `<img src="${state.logoDataUrl}" alt="Event logo">` : ''}
+      <div class="logo-setup-actions">
+        <input type="file" id="logoFile" accept="image/*" style="display:none;">
+        <button class="apply-btn" id="logoUploadBtn" type="button" style="margin-top:0;">${state.logoDataUrl ? 'Replace logo' : 'Upload logo'}</button>
+        ${state.logoDataUrl ? `<button class="logo-remove-btn" id="logoRemoveBtn" type="button">Remove logo</button>` : ''}
+      </div>
+    </div>
+  </div>
+  <div class="setup-card">
+    <h3>Session sizes</h3>
+    <div class="note" style="margin-bottom:10px;">Set how many matches are being played in each session. Reducing a count trims matches from the end; increasing adds blank ones. The win/retain numbers recalculate automatically from this total.</div>`;
+  state.sessions.forEach(s=>{
+    html += `<div class="setup-row">
+      <label>${escapeHtml(s.label)} — ${escapeHtml(s.sub)}</label>
+      <input type="number" min="0" max="16" value="${s.count}" data-sid="${s.id}">
+    </div>`;
+  });
+  html += `</div>
+  <div class="setup-card">
+    <h3>Defending champion</h3>
+    <div class="note" style="margin-bottom:10px;">If a team is defending (won last time), they only need to tie to retain the trophy, while the challenger needs an outright majority. Choose who's defending, or "Neither" for a first event or a fresh trophy.</div>
+    <div class="seg" id="defendSeg">
+      <button data-defend="A" class="${state.defendingTeam==='A'?'active':''}">${escapeHtml(state.teamA)} defending</button>
+      <button data-defend="none" class="${!state.defendingTeam?'active':''}">Neither</button>
+      <button data-defend="B" class="${state.defendingTeam==='B'?'active':''}">${escapeHtml(state.teamB)} defending</button>
+    </div>
+  </div>
+  <div class="setup-card">
+    <h3>TV rotation</h3>
+    <div class="note" style="margin-bottom:10px;">Auto-cycles Board → MVP → History on this device — handy for a TV or laptop left showing the scores. Only affects this browser; everyone else's device is unaffected.</div>
+    <div class="setup-row">
+      <label>Board (seconds)</label>
+      <input type="number" min="3" max="300" value="${(getRotationSettings()).board}" id="rotBoardSecs">
+    </div>
+    <div class="setup-row">
+      <label>MVP (seconds)</label>
+      <input type="number" min="3" max="300" value="${(getRotationSettings()).mvp}" id="rotMvpSecs">
+    </div>
+    <div class="setup-row">
+      <label>History (seconds)</label>
+      <input type="number" min="3" max="300" value="${(getRotationSettings()).history}" id="rotHistorySecs">
+    </div>
+    <button class="apply-btn" id="rotToggleBtn" type="button" style="background:${getRotationSettings().enabled ? '#9A3A2C' : ''}">${getRotationSettings().enabled ? 'Stop rotation' : 'Start rotation'}</button>
+  </div>
+  <div class="setup-card">
+    <h3>Course scorecard</h3>
+    <div class="note" style="margin-bottom:10px;">Par and stroke index (S.I.) for each hole — used to work out handicap strokes in the Update tab's hole-by-hole scoring.</div>
+    ${courseGridHtml(true)}
+    ${courseGridHtml(false)}
+  </div>
+  <div class="setup-card danger-card">
+    <h3>Danger zone</h3>
+    <div class="note" style="margin-bottom:12px;">These affect the live event for everyone using it right now — there's no undo.</div>
+    <button class="danger-btn" id="resetScoresBtn" type="button">Reset all scores &amp; matches</button>
+    <div class="note" style="margin:-4px 0 14px;">Clears every player name, score, and result across all sessions. Keeps team names, colours, course, logo, and defending champion as they are.</div>
+    <button class="danger-btn solid" id="resetEverythingBtn" type="button">Reset everything</button>
+    <div class="note" style="margin:-4px 0 0;">Wipes scores <strong>and</strong> the whole setup — team names, colours, course, logo, defending champion — back to a blank first-time event.</div>
+  </div>`;
+  html += `
+  <button class="apply-btn" id="applySetup">Apply changes</button>
+  <p class="note" style="text-align:center; margin-top:14px;">Open the Board view on a TV or laptop, and the Update view on each scorer's phone — all devices share the same live event.</p>
+  `;
+  el.innerHTML = html;
+
+  function selectSwatch(side, color){
+    if(side==='A') state.colorA = color; else state.colorB = color;
+    applyColors();
+    document.getElementById('swatchesA').innerHTML = colorSwatchHtml('A', state.colorA);
+    document.getElementById('swatchesB').innerHTML = colorSwatchHtml('B', state.colorB);
+    document.getElementById('customColorA').value = state.colorA;
+    document.getElementById('customColorB').value = state.colorB;
+    wireSwatches();
+  }
+
+  function wireSwatches(){
+    el.querySelectorAll('.swatch').forEach(sw=>{
+      sw.onclick = async ()=>{
+        selectSwatch(sw.dataset.side, sw.dataset.color);
+        await saveState();
+        renderBoard();
+      };
+    });
+  }
+  wireSwatches();
+
+  document.getElementById('customColorA').oninput = async (e)=>{
+    selectSwatch('A', e.target.value);
+    await saveState();
+    renderBoard();
+  };
+  document.getElementById('customColorB').oninput = async (e)=>{
+    selectSwatch('B', e.target.value);
+    await saveState();
+    renderBoard();
+  };
+
+  document.getElementById('defendSeg').querySelectorAll('button').forEach(btn=>{
+    btn.onclick = async ()=>{
+      state.defendingTeam = btn.dataset.defend==='none' ? null : btn.dataset.defend;
+      document.getElementById('defendSeg').querySelectorAll('button').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      await saveState();
+      renderBoard();
+    };
+  });
+
+  if(!Array.isArray(state.playerHandicaps)) state.playerHandicaps = [];
+  el.querySelectorAll('[data-hcpfield]').forEach(inp=>{
+    inp.oninput = async ()=>{
+      const idx = parseInt(inp.dataset.hcpidx);
+      const field = inp.dataset.hcpfield;
+      if(!state.playerHandicaps[idx]) state.playerHandicaps[idx] = {name:'', hcp:''};
+      state.playerHandicaps[idx][field] = field==='hcp' ? inp.value : inp.value;
+      await saveState();
+    };
+  });
+  el.querySelectorAll('[data-hcpremove]').forEach(btn=>{
+    btn.onclick = async ()=>{
+      const idx = parseInt(btn.dataset.hcpremove);
+      state.playerHandicaps.splice(idx, 1);
+      await saveState();
+      renderSetup();
+    };
+  });
+  document.getElementById('addHandicapRow').onclick = async ()=>{
+    state.playerHandicaps.push({name:'', hcp:''});
+    await saveState();
+    renderSetup();
+  };
+
+  document.getElementById('logoUploadBtn').onclick = ()=> document.getElementById('logoFile').click();
+  document.getElementById('logoFile').onchange = async ()=>{
+    const file = document.getElementById('logoFile').files[0];
+    if(!file) return;
+    try{
+      const dataUrl = await resizeImageFile(file, 240);
+      state.logoDataUrl = dataUrl;
+      await saveState();
+      renderSetup();
+      renderBoard();
+    }catch(e){
+      console.error('logo upload failed', e);
+    }
+  };
+  const logoRemoveBtn = document.getElementById('logoRemoveBtn');
+  if(logoRemoveBtn) logoRemoveBtn.onclick = async ()=>{
+    state.logoDataUrl = null;
+    await saveState();
+    renderSetup();
+    renderBoard();
+  };
+
+  el.querySelectorAll('.hole-grid input[data-cfield]').forEach(inp=>{
+    inp.oninput = ()=>{
+      const hi = parseInt(inp.dataset.hole);
+      const val = parseInt(inp.value)||0;
+      state.course.holes[hi][inp.dataset.cfield] = val;
+    };
+  });
+
+  document.getElementById('rotBoardSecs').oninput = ()=>{
+    const s = getRotationSettings();
+    s.board = Math.max(3, parseInt(document.getElementById('rotBoardSecs').value)||20);
+    saveRotationSettings(s);
+  };
+  document.getElementById('rotMvpSecs').oninput = ()=>{
+    const s = getRotationSettings();
+    s.mvp = Math.max(3, parseInt(document.getElementById('rotMvpSecs').value)||12);
+    saveRotationSettings(s);
+  };
+  document.getElementById('rotHistorySecs').oninput = ()=>{
+    const s = getRotationSettings();
+    s.history = Math.max(3, parseInt(document.getElementById('rotHistorySecs').value)||12);
+    saveRotationSettings(s);
+  };
+  document.getElementById('rotToggleBtn').onclick = ()=>{
+    if(getRotationSettings().enabled) stopRotation();
+    else startRotation();
+  };
+
+  document.getElementById('resetScoresBtn').onclick = async ()=>{
+    if(!confirm('Reset all scores and matches for everyone? This clears every player name, score, and result across all sessions right now. Team names, colours, course, logo, and defending champion stay as they are. This cannot be undone.')) return;
+    state.sessions.forEach(s=>{ s.matches = buildMatches(s.id, s.count, [], s.type); });
+    await saveState();
+    renderAll();
+  };
+
+  document.getElementById('resetEverythingBtn').onclick = async ()=>{
+    if(!confirm('Reset EVERYTHING for everyone? This wipes all scores plus team names, colours, course, logo, and defending champion, back to a blank first-time event. This cannot be undone.')) return;
+    state = defaultState();
+    await saveState();
+    renderAll();
+  };
+
+  document.getElementById('applySetup').onclick = async ()=>{
+    state.teamA = document.getElementById('teamAInput').value.trim() || 'Team A';
+    state.teamB = document.getElementById('teamBInput').value.trim() || 'Team B';
+    el.querySelectorAll('input[data-sid]').forEach(inp=>{
+      const sid = inp.dataset.sid;
+      const newCount = Math.max(0, parseInt(inp.value)||0);
+      const s = state.sessions.find(ss=>ss.id===sid);
+      s.count = newCount;
+      s.matches = buildMatches(sid, newCount, s.matches, s.type);
+    });
+    await saveState();
+    renderAll();
+    const btn = document.getElementById('applySetup');
+    btn.textContent = 'Applied ✓';
+    setTimeout(()=>{ btn.textContent='Apply changes'; }, 1400);
+  };
+}
+
+function escapeHtml(str){
+  return (str||'').toString().replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function renderAll(){
+  renderBoard();
+  renderUpdate();
+  renderMVP();
+  renderHistory();
+  renderLive();
+  renderSetup();
+  const bt = document.getElementById('brandTitle');
+  if(document.activeElement !== bt) bt.textContent = state.title;
+}
+
+function setView(v){
+  currentView = v;
+  document.querySelectorAll('.nav button').forEach(b=>b.classList.toggle('active', b.dataset.view===v));
+  document.getElementById('view-board').classList.toggle('hidden', v!=='board');
+  document.getElementById('view-update').classList.toggle('hidden', v!=='update');
+  document.getElementById('view-mvp').classList.toggle('hidden', v!=='mvp');
+  document.getElementById('view-history').classList.toggle('hidden', v!=='history');
+  document.getElementById('view-live').classList.toggle('hidden', v!=='live');
+  document.getElementById('view-setup').classList.toggle('hidden', v!=='setup');
+}
+
+document.querySelectorAll('.nav button').forEach(btn=>{
+  btn.onclick = async ()=>{
+    if(getRotationSettings().enabled) stopRotation();
+    await loadState();
+    renderAll();
+    setView(btn.dataset.view);
+  };
+});
+
+// Poll for live updates while on the Board or Live view (so a TV/laptop display stays
+// current as scorers update from their phones).
+setInterval(async ()=>{
+  if(currentView==='board'){
+    await loadState();
+    renderBoard();
+  } else if(currentView==='live'){
+    await loadState();
+    renderLive();
+  }
+}, 4000);
+
+(async function init(){
+  await loadState();
+  document.title = state.title;
+  renderAll();
+  if(getRotationSettings().enabled){
+    rotationIdx = ROTATION_ORDER.indexOf(currentView);
+    if(rotationIdx < 0) rotationIdx = 0;
+    setView(ROTATION_ORDER[rotationIdx]);
+    scheduleNextRotation();
+  }
+})();
+</script>
+</body>
+</html>
